@@ -51,5 +51,3 @@ Findings include:
 - **applyFixes**: writes changes to `/workspace` and always emits patches
 - **targets.changedOnly**: currently ignored (use `targets.paths`)
 
-## Hinweis
-Dedupe/Perf/Complexity sind **Heuristiken**: hohe Nützlichkeit, aber nicht „Beweis“. Nutze sie als Priorisierung.
