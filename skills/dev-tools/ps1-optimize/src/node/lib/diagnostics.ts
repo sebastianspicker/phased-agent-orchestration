@@ -25,10 +25,16 @@ function levelToSeverityList(level: DebugLevel): string[] {
   return ["Error", "Warning", "Information"];
 }
 
-function buildPssaScript(paths: string[], modulePaths: string[], level: DebugLevel): string {
+function escapePSSingleQuoted(value: string): string {
+  return value.replace(/'/g, "''").replace(/[\r\n]/g, "");
+}
+
+export function buildPssaScript(paths: string[], modulePaths: string[], level: DebugLevel): string {
   const pathsJson = JSON.stringify(paths);
   const severityList = levelToSeverityList(level).map((s) => `'${s}'`).join(", ");
-  const modulePathPrefix = modulePaths.length ? modulePaths.join(";") + ";" : "";
+  const modulePathPrefix = modulePaths.length
+    ? modulePaths.map((p) => escapePSSingleQuoted(p)).join(";") + ";"
+    : "";
 
   return [
     "$ErrorActionPreference='Stop'",

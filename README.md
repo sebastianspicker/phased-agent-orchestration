@@ -1,49 +1,80 @@
-> Please note: Due to the rapid increase in the number of AI agents and capabilities, I have archived the real agents and continued the repo with a focus on AI. If you landed here expecting something else, I apologize! For everyone else: enjoy :)
-
 # coding-agents-space
 
 A skill-first repository layout for building and shipping **Coding Agent Skills** with strict schemas,
 sandboxed execution, and testable implementations.
 
-This repo includes two layers:
+> Note: Legacy/non-AI agent content has been archived. This repository now focuses on AI coding agent skills.
+
+## What’s included
 - Runtime skills (Node-based packages under `skills/dev-tools/*`).
 - Codex playbook skills (agent guidance under `.codex/skills/*`).
+- Shared contracts in `contracts/`.
+- Tool definitions in `agent-config/`.
 
 ## Runtime skills
+- `skills/dev-tools/ts-optimize` — TypeScript/JavaScript diagnostics, patches, migrations, codegen, recommendations.
+- `skills/dev-tools/ps1-optimize` — PowerShell diagnostics, lint fixes, migrations, codegen, recommendations.
 
-- `skills/dev-tools/ts-optimize` — Debugging (quick/medium/complex), dedupe detection, lint fixes, API migrations,
-  refactor patches, codegen (barrels), and optimization recommendations for web + scientific/numerics code.
-- `skills/dev-tools/ps1-optimize` — Diagnostics, lint fixes, module migrations, refactor patches, codegen (index.psm1),
-  and recommendations for PowerShell projects.
-
-## Codex playbook skills
-Playbooks are agent-friendly “how to use the runtime skills” guides (cookbooks + workflows):
+## Playbook skills (agent guidance)
+Playbooks are agent-friendly “how to use the runtime skills” guides:
 - Index + quick links: `agents/dev-tools/README.md`
-- Agent rules + verification commands: `AGENTS.md`
+- Full playbook index: `.codex/skills/README.md`
 
-Key playbooks:
-- `.codex/skills/ts-optimize/SKILL.md` — cookbook for `ts-optimize` actions (debug/dedupe/lint/migrate/refactor/codegen/recommend).
-- `.codex/skills/ps1-optimize/SKILL.md` — cookbook for `ps1-optimize` actions (debug/lint/migrate/refactor/codegen/recommend).
-- `.codex/skills/dev-tools-run-skill/SKILL.md` — how to run runtime skills (Docker/local) and produce reproducible JSON output.
-- `.codex/skills/dev-tools-patches/SKILL.md` — patch review/apply workflow (patch-first, `applyFixes=true`).
-- `.codex/skills/dev-tools-skill-maintenance/SKILL.md` — how to change runtime skills without breaking contracts (schemas/tests/docs).
-- `.codex/skills/ts-implement/SKILL.md` — write TS/JS code (feature/bugfix) with verification.
-- `.codex/skills/ps-implement/SKILL.md` — write PowerShell code (feature/bugfix) with verification.
-- `.codex/skills/ts-runtime-debug/SKILL.md` — runtime debugging workflow for TS/JS.
-- `.codex/skills/ps-runtime-debug/SKILL.md` — runtime debugging workflow for PowerShell.
-- `.codex/skills/repo-tool-definitions/SKILL.md` — maintain runner tool definitions (names + schema refs).
-- `.codex/skills/repo-contracts/SKILL.md` — change shared contract schemas with compatibility discipline.
-- `.codex/skills/repo-new-runtime-skill/SKILL.md` — scaffold a new runtime skill package from the template and wire it in.
-- `.codex/skills/repo-run-commands/SKILL.md` — derive the right verify commands in mono/workspace repos.
-- `.codex/skills/repo-bisect-regressions/SKILL.md` — bisect regressions with a deterministic repro command.
+## Requirements
+- Node.js >= 20
+- npm
+- Python 3 (for `scripts/codex/validate_skills.py`)
+- Docker (optional, for sandboxed runtime skill execution)
+- PowerShell (`pwsh`) optional; used by `ps1-optimize` diagnostics when available
 
-## Quick start (runtime skills)
-See `skills/dev-tools/ts-optimize/README.md` or `skills/dev-tools/ps1-optimize/README.md`.
+## Quickstart
+Verify everything:
+```bash
+./scripts/verify.sh
+```
 
-## Layout
+Run a runtime skill locally via Docker (examples and input schemas):
+- `skills/dev-tools/ts-optimize/README.md`
+- `skills/dev-tools/ps1-optimize/README.md`
+
+## Development
+Per package:
+```bash
+cd skills/dev-tools/ts-optimize
+npm ci
+npm run build
+npm test
+```
+```bash
+cd skills/dev-tools/ps1-optimize
+npm ci
+npm run build
+npm test
+```
+
+## Testing
+- Repo-wide: `./scripts/verify.sh`
+- Package-level: `npm test` in each runtime skill package
+
+## Security
+- Runtime skill sandboxes are configured to avoid network access (see each `sandbox/permissions.yaml`).
+- CI includes CodeQL (SAST), Gitleaks (secret scanning), and `npm audit` (SCA) workflows.
+- Please redact secrets from logs and issues.
+
+## Troubleshooting
+- Node version mismatch: ensure Node >= 20.
+- Python not found: install Python 3 or adjust PATH.
+- `npm ci` fails: delete `node_modules` and retry.
+- `pwsh` not available: `ps1-optimize` diagnostics are skipped and logged.
+- Gitleaks in CI: if required, set `GITLEAKS_LICENSE` secret for org repos.
+
+## Repository layout
 - `AGENTS.md` — repo guide for AI coding agents (rules + verification)
-- `.codex/skills/` — Codex playbook skills (agent guidance)
-- `contracts/` — shared schemas (manifest, tool-def, run-result, permissions)
-- `agents/` — human-facing navigation docs (indexes)
-- `docs/archive/legacy-dev-skills/` — archived legacy agent docs
-- `skills/<domain>/<skill>/` — each skill is self-contained
+- `.codex/skills/` — Codex playbook skills
+- `skills/dev-tools/*` — runtime skill packages
+- `contracts/` — shared schemas
+- `agent-config/` — tool definitions and constraints
+- `docs/` — runbook, findings, log, decisions, repo map
+
+## License
+See `LICENSE`.
