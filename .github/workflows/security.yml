@@ -2,16 +2,30 @@ name: Security
 
 on:
   push:
+    branches:
+      - main
   pull_request:
   schedule:
     - cron: "0 6 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   codeql:
-    runs-on: ubuntu-latest
+    name: CodeQL
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
     permissions:
       contents: read
       security-events: write
@@ -28,7 +42,9 @@ jobs:
         uses: github/codeql-action/analyze@6bc82e05fd0ea64601dd4b465378bbcf57de0314 # v4.32.1
 
   gitleaks:
-    runs-on: ubuntu-latest
+    name: Gitleaks
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -43,7 +59,10 @@ jobs:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
   npm-audit:
-    runs-on: ubuntu-latest
+    name: Npm Audit (scheduled)
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -51,6 +70,10 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            skills/dev-tools/ts-optimize/package-lock.json
+            skills/dev-tools/ps1-optimize/package-lock.json
       - name: Audit ts-optimize
         run: |
           cd skills/dev-tools/ts-optimize
