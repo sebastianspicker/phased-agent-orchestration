@@ -1,5 +1,6 @@
 import { performance } from "node:perf_hooks";
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import { Input, RunResult, Metrics, Finding, Patch, Action } from "./types.js";
 import { loadProject } from "./lib/loadProject.js";
 import { runDebug } from "./lib/debug.js";
@@ -36,6 +37,15 @@ function validateInput(input: Input): void {
     if (!a || typeof a.type !== "string") {
       throw Object.assign(new Error("action.type is required"), { code: "E_BAD_INPUT" });
     }
+    const paths = a.targets?.paths;
+    if (paths?.length) {
+      for (const p of paths) {
+        const resolved = path.resolve(input.project.root, p);
+        if (!isUnderWorkspace(resolved)) {
+          throw Object.assign(new Error("targets.paths must resolve under /workspace"), { code: "E_BAD_ROOT" });
+        }
+      }
+    }
   }
   if (input.project.tsconfigPath && !isUnderWorkspace(input.project.tsconfigPath)) {
     throw Object.assign(new Error("project.tsconfigPath must be under /workspace"), { code: "E_BAD_ROOT" });
@@ -48,6 +58,9 @@ async function main() {
 
   try {
     const raw = readStdin();
+    if (!raw || !raw.trim()) {
+      throw Object.assign(new Error("Empty input: expected JSON on stdin"), { code: "E_BAD_INPUT" });
+    }
     const input = JSON.parse(raw) as Input;
     validateInput(input);
 

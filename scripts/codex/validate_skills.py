@@ -91,13 +91,13 @@ def _validate_skill_dir(skill_dir: Path) -> list[SkillError]:
                 SkillError(skill_md, f"description length out of range ({len(description)}; must be 1..1024)")
             )
 
-    # 500-line guideline.
-    line_count = _read_text(skill_md).count("\n") + 1
+    # 500-line guideline and deep-ref check (single read).
+    body = _read_text(skill_md)
+    line_count = body.count("\n") + 1
     if line_count > 500:
         errors.append(SkillError(skill_md, f"SKILL.md too long ({line_count} lines > 500)"))
 
     # Keep file references one level deep from SKILL.md (avoid assets/foo/bar).
-    body = _read_text(skill_md)
     deep_ref = re.search(r"\b(assets|references|scripts)/[^\s)]+/[^\s)]+", body)
     if deep_ref:
         errors.append(SkillError(skill_md, f"Deep file reference found: {deep_ref.group(0)!r}"))

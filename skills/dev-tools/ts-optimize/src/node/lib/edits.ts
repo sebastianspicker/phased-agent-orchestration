@@ -1,6 +1,20 @@
 export type TextEdit = { start: number; end: number; newText: string };
 
 export function applyEdits(text: string, edits: TextEdit[]): string {
+  const len = text.length;
+  for (const e of edits) {
+    if (
+      typeof e.start !== "number" ||
+      typeof e.end !== "number" ||
+      e.start < 0 ||
+      e.end > len ||
+      e.start > e.end
+    ) {
+      throw new Error(
+        `Invalid edit: start=${e.start}, end=${e.end}, text.length=${len}`
+      );
+    }
+  }
   const sorted = [...edits].sort((a, b) => b.start - a.start);
   let out = text;
   for (const e of sorted) {

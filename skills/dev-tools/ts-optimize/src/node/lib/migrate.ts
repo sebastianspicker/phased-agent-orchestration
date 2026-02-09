@@ -56,6 +56,9 @@ export async function runMigrate(
     } catch {
       continue;
     }
+    // Sync in-memory AST with disk so getStart()/getEnd() match current content
+    // (e.g. after a prior action in this run wrote the file).
+    sf.replaceWithText(oldText);
 
     const edits: TextEdit[] = [];
     const moduleEditKeys = new Set<string>();
