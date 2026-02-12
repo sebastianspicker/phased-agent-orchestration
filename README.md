@@ -70,11 +70,11 @@ npm test
 
 ## Repository layout
 - `AGENTS.md` — repo guide for AI coding agents (rules + verification)
-- `.codex/skills/` — Codex playbook skills
+- `.codex/skills/` — Codex playbook skills (documented in `.codex/skills/README.md`). Other `.codex/` subdirs are not part of this README.
 - `skills/dev-tools/*` — runtime skill packages
 - `contracts/` — shared schemas
 - `agent-config/` — tool definitions and constraints
-- `docs/` — runbook, findings, log, decisions, repo map
+- `docs/` — runbook, repo map, skill template, decisions
 
 ## License
 See `LICENSE`.

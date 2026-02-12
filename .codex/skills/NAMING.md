@@ -25,3 +25,8 @@ To keep the index readable, we use **prefixes** to group by topic.
 ## Dedupe approach
 - Prefer linking to an existing skill in “Related skills” instead of copying large blocks of text.
 - If two skills share a workflow core, keep the core in one skill and make the other focus on domain-specific deltas.
+
+## Generalized skills with configurations
+- **One skill per workflow type** (e.g. `language-debug`, `language-quality`, `language-implement`, `language-refactor`, `language-testing`): the SKILL.md holds the shared workflow and a **Configurations** section (table or subsections) listing variants (e.g. TypeScript/JavaScript, Python, PowerShell, Shell) with triggers, verification, and optional toolbox per variant.
+- Language-specific entries (`ts-debug`, `py-debug`, etc.) are **redirects**: they point at the generalized skill and state which configuration to use; they keep existing links and search terms valid.
+- Before adding a new `ts-*` / `py-*` / `ps-*` / `sh-*` skill: check whether it fits as a new **configuration** in an existing generalized skill (e.g. a new row in the Configurations table) instead of a separate skill.

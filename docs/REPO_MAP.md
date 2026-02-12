@@ -1,15 +1,15 @@
 # REPO_MAP
 
 ## Top-level
-- `AGENTS.md`: agent rules + repo map + verification commands.
-- `README.md`: repository overview (runtime skills + playbooks).
-- `scripts/verify.sh`: repo-wide verification script (validates skills + builds/tests both runtime packages).
-- `contracts/`: shared JSON schemas (manifest/tool-def/run-result/permissions).
-- `agent-config/`: tool definitions and constraints.
-- `.codex/skills/`: playbook skills (agent guidance).
-- `agents/`: human-facing navigation docs.
-- `docs/`: documentation (runbook, repo map, findings, log, decisions).
-- `skills/dev-tools/*`: runtime skill packages.
+- `AGENTS.md` — agent rules, repo map, verification commands.
+- `README.md` — repository overview (runtime skills + playbooks).
+- `scripts/verify.sh` — repo-wide verification (validates playbook skills + builds/tests both runtime packages).
+- `contracts/` — shared JSON schemas (manifest, tool-def, run-result, permissions).
+- `agent-config/` — tool definitions and constraints.
+- `.codex/skills/` — playbook skills (agent guidance); index in `.codex/skills/README.md`. Other `.codex/` subdirs are excluded from this map.
+- `agents/` — human-facing navigation (e.g. `agents/dev-tools/README.md`).
+- `docs/` — runbook, repo map, skill template, decisions.
+- `skills/dev-tools/*` — runtime skill packages.
 
 ## Runtime skill packages
 ### `skills/dev-tools/ts-optimize`
