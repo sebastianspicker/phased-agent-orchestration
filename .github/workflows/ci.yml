@@ -33,7 +33,7 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: |
-            skills/dev-tools/ts-optimize/package-lock.json
-            skills/dev-tools/ps1-optimize/package-lock.json
+            skills/dev-tools/quality-gate/package-lock.json
+            skills/dev-tools/multi-model-review/package-lock.json
       - name: Verify
         run: ./scripts/verify.sh

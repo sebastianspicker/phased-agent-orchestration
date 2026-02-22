@@ -1,5 +1,0 @@
-# Example CI snippet (adapt to your CI system)
-steps:
-  - name: Scan image
-    run: |
-      trivy image --severity CRITICAL,HIGH --exit-code 1 myapp:prod

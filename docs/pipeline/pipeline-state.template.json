@@ -1,0 +1,39 @@
+{
+  "run_id": "",
+  "created_at": "",
+  "current_phase": "arm",
+  "completed_gates": [],
+  "artifacts": {
+    "brief": null,
+    "design": null,
+    "review": null,
+    "plan": null,
+    "drift_reports": [],
+    "quality_reports": []
+  },
+  "config": {
+    "cognitive_tiers": {
+      "arm": "high_reasoning",
+      "design": "high_reasoning",
+      "adversarial_review_lead": "high_reasoning",
+      "adversarial_review_reviewers": "fast",
+      "plan": "high_reasoning",
+      "pmatch": "fast",
+      "build_lead": "high_reasoning",
+      "build_worker": "fast",
+      "post_build": "fast"
+    },
+    "reviewer_roles": [
+      "architect-reviewer",
+      "security-engineer",
+      "performance-engineer"
+    ],
+    "post_build": [
+      "denoise",
+      "quality-frontend",
+      "quality-backend",
+      "quality-docs",
+      "security-review"
+    ]
+  }
+}

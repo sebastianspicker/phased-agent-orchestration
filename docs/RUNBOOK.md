@@ -7,7 +7,6 @@ This runbook lists reproducible commands for setup, verification, and troublesho
 - npm (for `npm ci` / `npm run`).
 - Python 3 (for `scripts/codex/validate_skills.py`).
 - Docker (optional, for local sandbox execution).
-- PowerShell (`pwsh`) is optional; used by `ps1-optimize` diagnostics when available.
 
 ## Repo-wide verification (full loop)
 From repo root:
@@ -25,13 +24,13 @@ python3 scripts/codex/validate_skills.py
 ```
 Then, in the relevant package:
 ```bash
-cd skills/dev-tools/ts-optimize
+cd skills/dev-tools/quality-gate
 npm ci
 npm run build
 npm test
 ```
 ```bash
-cd skills/dev-tools/ps1-optimize
+cd skills/dev-tools/multi-model-review
 npm ci
 npm run build
 npm test
@@ -57,18 +56,27 @@ npm test
 ### SCA / dependency scanning
 From repo root:
 ```bash
-cd skills/dev-tools/ts-optimize
+cd skills/dev-tools/quality-gate
 npm ci
 npm audit --audit-level=high
 ```
 ```bash
-cd skills/dev-tools/ps1-optimize
+cd skills/dev-tools/multi-model-review
 npm ci
 npm audit --audit-level=high
 ```
 
 ### SAST
 - CI: CodeQL (`.github/workflows/security.yml`).
+
+### Application hardening checks (when auditing running web apps)
+Use these checks during `security-review` and after fixes:
+- Security headers present (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy).
+- Session cookies use `Secure`, `HttpOnly`, and explicit `SameSite`.
+- No production debug exposure (stack traces, framework banners, `X-Powered-By`).
+- Access-control checks for IDOR/tenant isolation and mass-assignment abuse.
+- CSRF protection on all state-changing routes.
+- Input abuse checks (SSRF, SQL/NoSQL injection, path traversal, insecure file upload, open redirects, JWT misconfiguration).
 
 ## Troubleshooting
 - Node version mismatch: ensure Node >= 20.

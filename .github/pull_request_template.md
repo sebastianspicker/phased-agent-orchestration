@@ -4,8 +4,8 @@
 # Testing
 - [ ] Not run (explain why)
 - [ ] `./scripts/verify.sh`
-- [ ] `npm test` (ts-optimize)
-- [ ] `npm test` (ps1-optimize)
+- [ ] `npm test` (quality-gate)
+- [ ] `npm test` (multi-model-review)
 - [ ] Other (describe):
 
 # Risk / Impact

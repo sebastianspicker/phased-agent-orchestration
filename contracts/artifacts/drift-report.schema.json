@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Drift report artifact",
+  "description": "Output of /pmatch phase: mechanized drift detection between source-of-truth and target documents.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_document",
+    "target_document",
+    "claims",
+    "findings",
+    "adjudication"
+  ],
+  "properties": {
+    "source_document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ref"],
+      "properties": {
+        "type": { "type": "string", "enum": ["design", "plan"] },
+        "ref": { "type": "string", "minLength": 1, "description": "Path to the source artifact file." }
+      }
+    },
+    "target_document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ref"],
+      "properties": {
+        "type": { "type": "string", "enum": ["plan", "implementation"] },
+        "ref": { "type": "string", "minLength": 1, "description": "Path to the target artifact or directory." }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "claim", "verification_status", "evidence", "extractor"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "claim": { "type": "string", "minLength": 1 },
+          "verification_status": { "type": "string", "enum": ["verified", "violated", "partial", "unverifiable"] },
+          "evidence": { "type": "string", "minLength": 1 },
+          "extractor": { "type": "string", "minLength": 1, "description": "Extractor/adjudicator identifier for this claim." },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["description", "severity", "claim_ids"],
+        "properties": {
+          "description": { "type": "string", "minLength": 1 },
+          "severity": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+          "claim_ids": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+          "mitigation": { "type": "string" }
+        }
+      }
+    },
+    "adjudication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "extractors", "conflicts_resolved", "resolution_policy"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["heuristic", "dual-extractor"] },
+        "extractors": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        },
+        "conflicts_resolved": { "type": "integer", "minimum": 0 },
+        "resolution_policy": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

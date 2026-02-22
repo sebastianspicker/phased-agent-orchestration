@@ -1,16 +1,16 @@
 [
   {
-    "name": "dev_tools_ts_optimize",
-    "description": "Optimize a TypeScript project: debug (quick/medium/complex), dedupe detection, lint fixes, API migrations, refactor patches, codegen, and optimization recommendations.",
+    "name": "dev_tools_quality_gate",
+    "description": "Validate artifacts against JSON Schema and run acceptance criteria. Emits structured pass/fail gate results for pipeline orchestration.",
     "parameters": {
-      "$ref": "../../skills/dev-tools/ts-optimize/schemas/input.schema.json"
+      "$ref": "../../skills/dev-tools/quality-gate/schemas/input.schema.json"
     }
   },
   {
-    "name": "dev_tools_ps1_optimize",
-    "description": "Optimize PowerShell scripts: diagnostics, lint fixes, migrations, refactor patches, codegen, and recommendations.",
+    "name": "dev_tools_multi_model_review",
+    "description": "Finding-processing engine: deduplicates findings from multiple reviewer agents, runs cost/benefit analysis, and detects drift between documents. Accepts pre-collected ReviewerFindings[] — no external API calls.",
     "parameters": {
-      "$ref": "../../skills/dev-tools/ps1-optimize/schemas/input.schema.json"
+      "$ref": "../../skills/dev-tools/multi-model-review/schemas/input.schema.json"
     }
   }
 ]

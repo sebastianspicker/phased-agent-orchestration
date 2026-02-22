@@ -1,2 +1,0 @@
-# Run every hour (example)
-0 * * * * /usr/bin/env bash -lc '/opt/job/run.sh' >>/var/log/job.log 2>&1

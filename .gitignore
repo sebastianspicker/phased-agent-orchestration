@@ -19,6 +19,7 @@ Thumbs.db
 .idea/
 .vscode/
 .cursor/
+!.cursor/skills/
 
 # Test output
 coverage/
@@ -50,8 +51,17 @@ __pycache__/
 !.env.example
 !.env.sample
 
+# Pipeline state (per-project, gitignored)
+.pipeline/
+
 # docs (local findings/logs/decisions)
 DECISIONS.md
 FINDINGS.md
 LOG.md
 REFACTOR_PLAN.md
+
+# Local retirement and historical material (intentionally not tracked)
+deprecated/
+_archive/
+.codex/skills-archive/
+.codex/ralph-audit/

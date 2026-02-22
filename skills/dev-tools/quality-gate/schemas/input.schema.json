@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "quality-gate input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["artifact", "schema_ref", "phase", "criteria"],
+  "properties": {
+    "artifact": {
+      "type": "object",
+      "description": "The JSON artifact to validate"
+    },
+    "artifact_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional reference/path for the validated artifact (used in gate output)."
+    },
+    "schema_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path to the JSON Schema file to validate against (relative to /workspace)"
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "arm",
+        "design",
+        "adversarial-review",
+        "plan",
+        "pmatch",
+        "build",
+        "denoise",
+        "quality-frontend",
+        "quality-backend",
+        "quality-docs",
+        "security-review"
+      ],
+      "description": "Pipeline phase this gate belongs to"
+    },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "type", "path"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable criteria name"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["field-exists", "field-empty", "count-min", "regex-match"],
+            "description": "The type of check to perform"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Property path into the artifact (e.g. \"open_questions\")"
+          },
+          "value": {
+            "description": "Threshold or pattern depending on type (number for count-min, string for regex-match)"
+          }
+        }
+      }
+    }
+  }
+}
