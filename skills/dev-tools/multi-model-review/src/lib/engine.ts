@@ -25,7 +25,10 @@ export function validateInput(input: Input): void {
   if (!input?.document?.content || typeof input.document.content !== "string") {
     throw Object.assign(new Error("document.content is required"), { code: "E_BAD_INPUT" });
   }
-  if (!input?.document?.type || !["design", "plan", "implementation"].includes(input.document.type)) {
+  if (
+    !input?.document?.type ||
+    !["design", "plan", "implementation"].includes(input.document.type)
+  ) {
     throw Object.assign(new Error("document.type must be design, plan, or implementation"), {
       code: "E_BAD_INPUT",
     });
@@ -33,9 +36,12 @@ export function validateInput(input: Input): void {
 
   if (input.action.type === "review") {
     if (!Array.isArray(input.reviewer_findings) || input.reviewer_findings.length === 0) {
-      throw Object.assign(new Error("reviewer_findings must be a non-empty array for review action"), {
-        code: "E_BAD_INPUT",
-      });
+      throw Object.assign(
+        new Error("reviewer_findings must be a non-empty array for review action"),
+        {
+          code: "E_BAD_INPUT",
+        },
+      );
     }
     return;
   }
@@ -54,26 +60,42 @@ export function validateInput(input: Input): void {
   if (driftMode === "dual-extractor") {
     const claimSets = input.drift_config.extractor_claim_sets;
     if (!Array.isArray(claimSets) || claimSets.length !== 2) {
-      throw Object.assign(new Error("drift_config.extractor_claim_sets must contain exactly 2 claim sets in dual-extractor mode"), {
-        code: "E_BAD_INPUT",
-      });
+      throw Object.assign(
+        new Error(
+          "drift_config.extractor_claim_sets must contain exactly 2 claim sets in dual-extractor mode",
+        ),
+        {
+          code: "E_BAD_INPUT",
+        },
+      );
     }
     for (const claimSet of claimSets) {
       if (!claimSet?.extractor || typeof claimSet.extractor !== "string") {
-        throw Object.assign(new Error("Each extractor_claim_set requires a non-empty extractor string"), {
-          code: "E_BAD_INPUT",
-        });
+        throw Object.assign(
+          new Error("Each extractor_claim_set requires a non-empty extractor string"),
+          {
+            code: "E_BAD_INPUT",
+          },
+        );
       }
       if (!Array.isArray(claimSet.claims) || claimSet.claims.length === 0) {
-        throw Object.assign(new Error("Each extractor_claim_set requires a non-empty claims array"), {
-          code: "E_BAD_INPUT",
-        });
+        throw Object.assign(
+          new Error("Each extractor_claim_set requires a non-empty claims array"),
+          {
+            code: "E_BAD_INPUT",
+          },
+        );
       }
       for (const claim of claimSet.claims) {
         if (!claim?.id || !claim?.claim || !claim?.verification_status || !claim?.evidence) {
-          throw Object.assign(new Error("Each extractor claim must include id, claim, verification_status, and evidence"), {
-            code: "E_BAD_INPUT",
-          });
+          throw Object.assign(
+            new Error(
+              "Each extractor claim must include id, claim, verification_status, and evidence",
+            ),
+            {
+              code: "E_BAD_INPUT",
+            },
+          );
         }
       }
     }
@@ -123,7 +145,9 @@ export function runReview(input: Input, logs: string[]): ReviewData {
       model_id: rf.reviewer_id,
       findings: rf.findings,
     });
-    logs.push(`Processing findings from reviewer: ${rf.reviewer_id} (${rf.role}), ${rf.findings.length} findings`);
+    logs.push(
+      `Processing findings from reviewer: ${rf.reviewer_id} (${rf.role}), ${rf.findings.length} findings`,
+    );
     for (const f of rf.findings) {
       taggedFindings.push({ ...f, _source: rf.reviewer_id });
     }
@@ -162,7 +186,9 @@ export function runDriftDetect(input: Input, logs: string[]): DriftData {
   let detected;
   if (driftMode === "dual-extractor") {
     logs.push("Using dual-extractor drift adjudication mode");
-    detected = detectDriftFromExtractorClaims(driftConfig.extractor_claim_sets as ExtractorClaimSet[]);
+    detected = detectDriftFromExtractorClaims(
+      driftConfig.extractor_claim_sets as ExtractorClaimSet[],
+    );
   } else {
     logs.push("Using heuristic drift detection mode");
     detected = detectDrift(sourceText, targetText);

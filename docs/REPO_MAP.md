@@ -3,7 +3,7 @@
 ## Top-level
 - `AGENTS.md` — agent rules, repo map, verification commands.
 - `README.md` — repository overview (runtime skills + playbooks).
-- `scripts/verify.sh` — repo-wide verification (validates playbook skills + builds/tests both runtime packages).
+- `scripts/verify.sh` — repo-wide verification (validates playbook skills + runs lint/format/build/test on both runtime packages).
 - `contracts/` — shared JSON schemas (artifact contracts + quality gate).
 - `agent-config/` — tool definitions and constraints.
 - `.codex/skills/` — playbook skills (agent guidance); index in `.codex/skills/README.md`. Other `.codex/` subdirs are excluded from this map.
@@ -30,4 +30,5 @@
 - Tool contracts live in `contracts/*.schema.json` and are referenced by runtime skills and tool definitions.
 - Tool definitions live in `agent-config/tool-definitions/tools.generated.json`.
 - Skill validation: `scripts/codex/validate_skills.py` enforces SKILL.md frontmatter and structure.
+- Release-readiness contract: `contracts/artifacts/release-readiness.schema.json` defines final go/no-go evidence requirements.
 - Security orchestration contract: `contracts/artifacts/quality-report.schema.json` requires `security_audit` for `audit_type=security`, including coverage checklist, fix-loop evidence, and accepted-risk signoff metadata.

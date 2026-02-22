@@ -15,6 +15,9 @@ function makeInput(overrides: Partial<Input> = {}): Input {
 describe("validateInput", () => {
   it("accepts valid pipeline phase values", () => {
     expect(() => validateInput(makeInput({ phase: "security-review" }))).not.toThrow();
+    expect(() => validateInput(makeInput({ phase: "quality-static" }))).not.toThrow();
+    expect(() => validateInput(makeInput({ phase: "quality-tests" }))).not.toThrow();
+    expect(() => validateInput(makeInput({ phase: "release-readiness" }))).not.toThrow();
   });
 
   it("rejects unknown phases", () => {

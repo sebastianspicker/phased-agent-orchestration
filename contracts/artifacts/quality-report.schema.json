@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Quality report artifact",
-  "description": "Output of post-build phases: denoise, frontend/backend quality, docs freshness, security review with remediation tracking.",
+  "description": "Output of quality phases: static checks, tests, denoise, frontend/backend quality, docs freshness, and security review with remediation tracking.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -25,7 +25,7 @@
   "properties": {
     "audit_type": {
       "type": "string",
-      "enum": ["denoise", "frontend", "backend", "docs", "security"]
+      "enum": ["static", "tests", "denoise", "frontend", "backend", "docs", "security"]
     },
     "violations": {
       "type": "array",

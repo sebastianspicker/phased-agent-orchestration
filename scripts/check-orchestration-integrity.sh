@@ -20,7 +20,10 @@ declare -A adapters=(
   [plan]=".cursor/skills/orchestration-plan/SKILL.md"
   [pmatch]=".cursor/skills/orchestration-pmatch/SKILL.md"
   [build]=".cursor/skills/orchestration-build/SKILL.md"
+  [quality-static]=".cursor/skills/orchestration-quality-static/SKILL.md"
+  [quality-tests]=".cursor/skills/orchestration-quality-tests/SKILL.md"
   [post-build]=".cursor/skills/orchestration-postbuild/SKILL.md"
+  [release-readiness]=".cursor/skills/orchestration-release-readiness/SKILL.md"
 )
 
 declare -A expected_gates=(
@@ -30,7 +33,10 @@ declare -A expected_gates=(
   [plan]="plan-gate.json"
   [pmatch]="pmatch-gate.json"
   [build]="build-gate.json"
+  [quality-static]="quality-static-gate.json"
+  [quality-tests]="quality-tests-gate.json"
   [post-build]="postbuild-gate.json"
+  [release-readiness]="release-readiness-gate.json"
 )
 
 failures=()
@@ -65,7 +71,18 @@ import pathlib
 import sys
 
 root = pathlib.Path(sys.argv[1])
-tokens = ["arm", "design", "adversarial-review", "plan", "pmatch", "build", "post-build"]
+tokens = [
+    "arm",
+    "design",
+    "adversarial-review",
+    "plan",
+    "pmatch",
+    "build",
+    "quality-static",
+    "quality-tests",
+    "post-build",
+    "release-readiness",
+]
 
 def assert_order(path: pathlib.Path) -> None:
     text = path.read_text(encoding="utf-8")
@@ -101,11 +118,14 @@ expected = {
     "plan",
     "pmatch",
     "build",
+    "quality-static",
+    "quality-tests",
     "denoise",
     "quality-frontend",
     "quality-backend",
     "quality-docs",
     "security-review",
+    "release-readiness",
 }
 missing = sorted(expected - phase_enum)
 if missing:

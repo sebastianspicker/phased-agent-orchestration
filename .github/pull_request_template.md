@@ -4,7 +4,11 @@
 # Testing
 - [ ] Not run (explain why)
 - [ ] `./scripts/verify.sh`
+- [ ] `npm run lint` (quality-gate)
+- [ ] `npm run format:check` (quality-gate)
 - [ ] `npm test` (quality-gate)
+- [ ] `npm run lint` (multi-model-review)
+- [ ] `npm run format:check` (multi-model-review)
 - [ ] `npm test` (multi-model-review)
 - [ ] Other (describe):
 

@@ -1,6 +1,6 @@
 ---
 name: orchestration
-description: "Multi-phase AI workflow pipeline with quality gates, cognitive tiering, context scoping, and mandatory security remediation loops. Use when orchestrating idea-to-ship workflows: arm (brief), design, adversarial review, plan, drift detection, build, post-build quality. Choose configuration from user prompt."
+description: "Multi-phase AI workflow pipeline with quality gates, cognitive tiering, context scoping, and mandatory security remediation loops. Use when orchestrating idea-to-ship workflows: arm (brief), design, adversarial review, plan, drift detection, build, static/test gates, post-build quality, and release-readiness. Choose configuration from user prompt."
 ---
 
 # orchestration (Playbook)
@@ -14,11 +14,14 @@ Quality-gated pipeline from idea to shipped code. Each phase produces a validate
 - Execution plan, task groups, atomic planning → **plan**
 - Drift detection, plan-vs-design, claim verification → **pmatch**
 - Parallel build, agent coordination, implementation → **build**
+- Static quality gate (lint/format/type) → **quality-static**
+- Test quality gate (verification commands) → **quality-tests**
 - Dead code, noise, cleanup → **denoise**
 - Frontend style audit → **quality-frontend**
 - Backend style audit → **quality-backend**
 - Documentation freshness → **quality-docs**
 - OWASP, vulnerability scan, security → **security-review**
+- Final release decision gate → **release-readiness**
 - Full pipeline, end-to-end orchestration → **pipeline**
 
 ## Choosing configuration from user prompt
@@ -31,19 +34,22 @@ Quality-gated pipeline from idea to shipped code. Each phase produces a validate
 | execution plan, task groups, atomic planning, deterministic | plan |
 | drift, pmatch, plan-vs-design, claim verification | pmatch |
 | build, parallel, coordinate, implement, agent teams | build |
+| static checks, lint, format, typecheck | quality-static |
+| test gate, verification tests, quality tests | quality-tests |
 | denoise, dead code, unused, cleanup | denoise |
 | frontend quality, frontend style, qf | quality-frontend |
 | backend quality, backend style, qb | quality-backend |
 | docs freshness, documentation quality, qd | quality-docs |
 | security review, OWASP, vulnerabilities | security-review |
+| release readiness, ship gate, go/no-go | release-readiness |
 | full pipeline, end-to-end, orchestrate all phases | pipeline |
 
 ## Cognitive tiering
 
 | Tier | Role | Phases |
 |------|------|--------|
-| Lead (high-reasoning) | Strategy, design, coordination | arm, design, adversarial-review (lead), plan, build (lead) |
-| Worker (fast) | Implementation, audit, review | build (workers), adversarial-review (reviewers), denoise, quality-*, security-review, pmatch |
+| Lead (high-reasoning) | Strategy, design, coordination | arm, design, adversarial-review (lead), plan, build (lead), release-readiness |
+| Worker (fast) | Implementation, audit, review | build (workers), adversarial-review (reviewers), quality-static, quality-tests, denoise, quality-*, security-review, pmatch |
 
 ## Artifact contracts
 
@@ -58,7 +64,10 @@ When running on Cursor, map stages to adapters explicitly:
 - `plan` -> `.cursor/skills/orchestration-plan/SKILL.md`
 - `pmatch` -> `.cursor/skills/orchestration-pmatch/SKILL.md`
 - `build` -> `.cursor/skills/orchestration-build/SKILL.md`
+- `quality-static` -> `.cursor/skills/orchestration-quality-static/SKILL.md`
+- `quality-tests` -> `.cursor/skills/orchestration-quality-tests/SKILL.md`
 - `post-build` -> `.cursor/skills/orchestration-postbuild/SKILL.md`
+- `release-readiness` -> `.cursor/skills/orchestration-release-readiness/SKILL.md`
 
 ## Semantic anchors
 
@@ -91,6 +100,12 @@ Drift detection. Input: source artifact (design or plan) + target artifact (plan
 
 ### build
 Coordinated parallel build. Input: Execution Plan artifact. Model: lead (high-reasoning) + workers (fast). Steps: Lead distributes task groups to builder agents (each gets own terminal/context scoped to its task group only) → Builders implement independently → Lead coordinates, unblocks, monitors progress → After all builders finish, lead runs pmatch (plan vs implementation) → Gate: all acceptance criteria pass; pmatch clean; verification commands succeed. Hard rules: lead never writes code; builders see only their task group and file paths; no builder context leaks to another builder. Semantic intent: context minimization + separation of duties.
+
+### quality-static
+Static quality gate. Input: implementation (changed files) + verification commands. Model: worker (fast). Steps: Execute lint, format-check, and typecheck/build commands (no auto-fix) → Capture command evidence and failures → Validate report against `contracts/artifacts/quality-report.schema.json` (`audit_type: static`) → Write `.pipeline/runs/<run-id>/quality-reports/static.json`. Gate: all static commands exit 0; report schema-valid.
+
+### quality-tests
+Test quality gate. Input: implementation + execution plan verification commands. Model: worker (fast). Steps: Execute required test commands independently of build coordination → Capture failures with reproduction commands → Validate report against `contracts/artifacts/quality-report.schema.json` (`audit_type: tests`) → Write `.pipeline/runs/<run-id>/quality-reports/tests.json`. Gate: all required tests pass; no unresolved critical/high test violations.
 
 ### denoise
 Dead code and noise removal. Input: implementation (changed files). Model: worker (fast). Steps: Identify dead imports, unused variables, debug artifacts (console.log, TODO comments from build), orphaned code → Remove with evidence for each removal → Run tests to confirm no regressions → Validate against `contracts/artifacts/quality-report.schema.json` (audit_type: denoise). Gate: tests still pass after cleanup; no functional changes.
@@ -129,5 +144,8 @@ Execution steps:
 
 Validate against `contracts/artifacts/quality-report.schema.json` (audit_type: security). Gate: no open critical/high findings; mandatory checklist fully executed; accepted risks explicitly signed off.
 
+### release-readiness
+Final ship gate. Input: completed gate artifacts + quality reports + release docs. Model: lead (high-reasoning). Steps: Determine release decision (`go`, `no-go`, `conditional`) → Assess semver impact, changelog updates, migration readiness, rollback readiness, open risks, and approvals → Validate against `contracts/artifacts/release-readiness.schema.json` → Write `.pipeline/runs/<run-id>/release-readiness.json`. Gate: schema-valid artifact; changelog updated; major version impacts include validated migration docs; rollback tested with owner; open risks have owner and due date; conditional decisions include explicit conditions.
+
 ### pipeline
-Full pipeline orchestrator. Meta-configuration that runs phases in sequence: arm → design → adversarial-review → plan → pmatch → build → post-build. Steps: Initialize `.pipeline/runs/<run-id>/` → Run each phase, write artifacts, validate gates between phases → Block on gate failure (human must resolve before proceeding) → Post-build: run denoise, then quality-frontend + quality-backend + quality-docs + security-review (parallel or sequential depending on file independence) → For security-review specifically, run mandatory remediation loop (fix + rescan) with coverage of all required categories before final post-build gate close → Write pipeline-state.json after each phase transition. Hard rules: never auto-advance past a failed gate; human approval required at arm checkpoint, design alignment, adversarial review report, and any accepted security risk exception. Semantic intent: human control points + capability allocation.
+Full pipeline orchestrator. Meta-configuration that runs phases in sequence: arm → design → adversarial-review → plan → pmatch → build → quality-static → quality-tests → post-build → release-readiness. Steps: Initialize `.pipeline/runs/<run-id>/` → Run each phase, write artifacts, validate gates between phases → Block on gate failure (human must resolve before proceeding) → Post-build: run denoise, then quality-frontend + quality-backend + quality-docs + security-review (parallel or sequential depending on file independence) → For security-review specifically, run mandatory remediation loop (fix + rescan) with coverage of all required categories before final post-build gate close → Run release-readiness gate and block closure on `no-go` or unfulfilled `conditional` requirements → Write pipeline-state.json after each phase transition. Hard rules: never auto-advance past a failed gate; human approval required at arm checkpoint, design alignment, adversarial review report, conditional/no-go release decisions, and any accepted security risk exception. Semantic intent: human control points + capability allocation.

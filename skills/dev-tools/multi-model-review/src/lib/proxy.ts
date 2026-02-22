@@ -1,9 +1,6 @@
 import type { DocumentType } from "../types.js";
 
-export function buildReviewPrompt(
-  documentType: DocumentType,
-  customPrompt?: string,
-): string {
+export function buildReviewPrompt(documentType: DocumentType, customPrompt?: string): string {
   if (customPrompt) return customPrompt;
 
   const typeLabel = documentType.charAt(0).toUpperCase() + documentType.slice(1);
@@ -29,16 +26,16 @@ export function buildReviewPrompt(
     "",
     "## Output Format",
     "Return a JSON array of findings. Each finding:",
-    '```json',
-    '{',
+    "```json",
+    "{",
     '  "id": "<unique-id>",',
     '  "category": "<category>",',
     '  "description": "<what is wrong>",',
     '  "severity": "critical|high|medium|low|info",',
     '  "evidence": "<quote or reference>",',
     '  "suggestion": "<how to fix>"',
-    '}',
-    '```',
+    "}",
+    "```",
     "",
     "Return ONLY the JSON array, no additional text.",
   ].join("\n");

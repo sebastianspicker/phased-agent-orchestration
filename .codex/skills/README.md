@@ -12,7 +12,7 @@ This directory contains the **orchestration playbook**: a quality-gated pipeline
 
 | Type | Description | Configurations |
 |------|-------------|----------------|
-| [orchestration](orchestration/SKILL.md) | Multi-phase AI pipeline: Intake, Design Synthesis, Adversarial Challenge, Execution Blueprint, Drift Match, Coordinated Build, post-build quality, mandatory security audit+fix loops | arm, design, adversarial-review, plan, pmatch, build, denoise, quality-frontend, quality-backend, quality-docs, security-review, pipeline |
+| [orchestration](orchestration/SKILL.md) | Multi-phase AI pipeline: Intake, Design Synthesis, Adversarial Challenge, Execution Blueprint, Drift Match, Coordinated Build, static/test gates, post-build quality, release-readiness, mandatory security audit+fix loops | arm, design, adversarial-review, plan, pmatch, build, quality-static, quality-tests, denoise, quality-frontend, quality-backend, quality-docs, security-review, release-readiness, pipeline |
 
 ## How to use
 Open `orchestration/SKILL.md`. Use the "Choosing configuration from user prompt" table to pick the right configuration, then follow its steps.

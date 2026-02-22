@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Release readiness artifact",
+  "description": "Output of /release-readiness phase: final release-governance decision and operational readiness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "release_decision",
+    "semver_impact",
+    "changelog",
+    "migration",
+    "rollback",
+    "open_risks",
+    "approvals"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "release_decision": { "const": "conditional" }
+        },
+        "required": ["release_decision"]
+      },
+      "then": {
+        "required": ["conditions"],
+        "properties": {
+          "conditions": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "semver_impact": { "const": "major" }
+        },
+        "required": ["semver_impact"]
+      },
+      "then": {
+        "properties": {
+          "migration": {
+            "required": ["required", "doc_path", "validated"],
+            "properties": {
+              "required": { "const": true },
+              "doc_path": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "properties": {
+    "release_decision": {
+      "type": "string",
+      "enum": ["go", "no-go", "conditional"]
+    },
+    "semver_impact": {
+      "type": "string",
+      "enum": ["patch", "minor", "major", "none"]
+    },
+    "changelog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["updated", "path", "entries"],
+      "properties": {
+        "updated": { "type": "boolean" },
+        "path": { "type": "string", "minLength": 1 },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "validated"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "doc_path": { "type": "string", "minLength": 1 },
+        "validated": { "type": "boolean" }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "owner", "tested"],
+      "properties": {
+        "strategy": { "type": "string", "minLength": 1 },
+        "owner": { "type": "string", "minLength": 1 },
+        "tested": { "type": "boolean" }
+      }
+    },
+    "open_risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["risk", "owner", "due_date"],
+        "properties": {
+          "risk": { "type": "string", "minLength": 1 },
+          "owner": { "type": "string", "minLength": 1 },
+          "due_date": { "type": "string", "format": "date-time" },
+          "mitigation_plan": { "type": "string" }
+        }
+      }
+    },
+    "approvals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["owner", "approved_at"],
+        "properties": {
+          "owner": { "type": "string", "minLength": 1 },
+          "approved_at": { "type": "string", "format": "date-time" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "conditions": {
+      "type": "array",
+      "description": "Required in practice when release_decision is conditional.",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

@@ -15,7 +15,7 @@ From repo root:
 ```
 This runs:
 - `python3 scripts/codex/validate_skills.py`
-- `npm ci`, `npm run build`, `npm test` for both runtime skill packages.
+- `npm ci`, `npm run lint`, `npm run format:check`, `npm run build`, `npm test` for both runtime skill packages.
 
 ## Fast loop (per-package)
 From repo root:
@@ -26,18 +26,23 @@ Then, in the relevant package:
 ```bash
 cd skills/dev-tools/quality-gate
 npm ci
+npm run lint
+npm run format:check
 npm run build
 npm test
 ```
 ```bash
 cd skills/dev-tools/multi-model-review
 npm ci
+npm run lint
+npm run format:check
 npm run build
 npm test
 ```
 
 ## Lint / Format
-- No dedicated lint/format scripts are currently configured.
+- `npm run lint` (Biome check) per runtime package.
+- `npm run format:check` (Biome format verification) per runtime package.
 
 ## Typecheck
 - `npm run build` (per package, uses `tsc -p tsconfig.json`).

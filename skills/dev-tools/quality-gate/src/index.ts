@@ -14,7 +14,9 @@ async function main() {
   try {
     const raw = readStdin();
     if (!raw || !raw.trim()) {
-      throw Object.assign(new Error("Empty input: expected JSON on stdin"), { code: "E_BAD_INPUT" });
+      throw Object.assign(new Error("Empty input: expected JSON on stdin"), {
+        code: "E_BAD_INPUT",
+      });
     }
     const input = JSON.parse(raw) as Input;
     const evaluated = await evaluateGate(input);

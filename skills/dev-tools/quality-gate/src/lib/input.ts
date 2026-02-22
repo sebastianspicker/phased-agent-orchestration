@@ -9,7 +9,9 @@ export function validateInput(input: Input): void {
     throw Object.assign(new Error("schema_ref is required"), { code: "E_BAD_INPUT" });
   }
   if (input.artifact_ref !== undefined && typeof input.artifact_ref !== "string") {
-    throw Object.assign(new Error("artifact_ref must be a string when provided"), { code: "E_BAD_INPUT" });
+    throw Object.assign(new Error("artifact_ref must be a string when provided"), {
+      code: "E_BAD_INPUT",
+    });
   }
   if (!isGatePhase(input.phase)) {
     throw Object.assign(new Error("phase must be a valid pipeline phase"), { code: "E_BAD_INPUT" });

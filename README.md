@@ -2,6 +2,10 @@
 
 This repository defines a practical way to ship software with AI agents without letting quality drift.
 
+Originally, this repository was a broader orchestration playground with many parallel patterns, prompts, and agent collaboration styles. That worked for exploration, but as context windows became very large, the signal-to-noise ratio degraded: too much context produced too much noise, and too many concurrent contributors often meant too many cooks spoiling the broth.
+
+The repository therefore shifted to a phased orchestration model with strict gates, scoped context, and explicit handoffs. It now uses that same principle to evolve itself: changes are designed, challenged, implemented, and validated through the same phased pipeline that the repository defines.
+
 The system is built around one simple rule:
 **no stage can move forward until its output is validated.**
 
@@ -21,18 +25,20 @@ This orchestration addresses those problems directly:
 - pressure-test design from independent perspectives (Adversarial Challenge / `adversarial-review`),
 - create deterministic build instructions (Execution Blueprint / `plan`),
 - detect drift before and after coding (Drift Match / `pmatch`),
+- enforce static and test quality gates before audits (`quality-static`, `quality-tests`),
 - separate implementation from audit (Coordinated Build / `build` + post-build checks),
+- require explicit ship readiness evidence (`release-readiness`),
 - close security findings before shipping (`security-review` loop).
 
 ## Delivery Stages
 
 ```text
-Intake -> Design Synthesis -> Adversarial Challenge -> Execution Blueprint -> Drift Match -> Coordinated Build -> post-build
-Brief      Design            Review                   Plan                    Drift         Build              Quality + Security
+Intake -> Design Synthesis -> Adversarial Challenge -> Execution Blueprint -> Drift Match -> Coordinated Build -> Quality Static -> Quality Tests -> post-build -> Release Readiness
+Brief      Design            Review                   Plan                    Drift         Build              Static Gate        Test Gate        Quality + Security   Ship Gate
 ```
 
 Canonical phase aliases:
-`arm -> design -> adversarial-review -> plan -> pmatch -> build -> post-build`
+`arm -> design -> adversarial-review -> plan -> pmatch -> build -> quality-static -> quality-tests -> post-build -> release-readiness`
 
 | Stage (alias) | Why this stage exists | Required output |
 |---|---|---|
@@ -42,7 +48,10 @@ Canonical phase aliases:
 | Execution Blueprint (`plan`) | Remove guesswork for builders with atomic, testable tasks. | `plan.json` |
 | Drift Match (`pmatch`) | Detect source-vs-target drift using dual independent extractors. | `drift-reports/pmatch.json` |
 | Coordinated Build (`build`) | Execute in parallel with strict scope boundaries and conformance checks. | build changes + `build-gate.json` |
+| Quality Static (`quality-static`) | Enforce lint, format-check, and type checks before downstream audits. | `quality-reports/static.json` + `quality-static-gate.json` |
+| Quality Tests (`quality-tests`) | Enforce dedicated test verification before post-build audits. | `quality-reports/tests.json` + `quality-tests-gate.json` |
 | post-build | Run denoise + frontend/backend/docs/security audits before closure. | `quality-reports/*.json` + `postbuild-gate.json` |
+| Release Readiness (`release-readiness`) | Final go/no-go gate for semver impact, changelog, migration, rollback, and approvals. | `release-readiness.json` + `release-readiness-gate.json` |
 
 ## End-to-End Flow
 
@@ -75,12 +84,24 @@ flowchart TD
   O --> P["build includes plan-vs-implementation conformance check"]
   P --> Q{"build gate pass?"}
   Q -- "No" --> K
-  Q -- "Yes" --> R["post-build: denoise + qf + qb + qd + security-review"]
+  Q -- "Yes" --> R["quality-static: lint + format + type"]
 
-  R --> S{"post-build gate pass?"}
-  S -- "No" --> T["targeted remediation + rerun relevant checks"]
-  T --> R
-  S -- "Yes" --> U["Ready to ship"]
+  R --> S{"quality-static gate pass?"}
+  S -- "No" --> O
+  S -- "Yes" --> T["quality-tests: required verification tests"]
+
+  T --> U{"quality-tests gate pass?"}
+  U -- "No" --> O
+  U -- "Yes" --> V["post-build: denoise + qf + qb + qd + security-review"]
+
+  V --> W{"post-build gate pass?"}
+  W -- "No" --> X["targeted remediation + rerun relevant checks"]
+  X --> V
+  W -- "Yes" --> Y["release-readiness: semver + changelog + migration + rollback + approvals"]
+
+  Y --> Z{"release-readiness gate pass?"}
+  Z -- "No" --> X
+  Z -- "Yes" --> AA["Ready to ship"]
 ```
 
 ## What Is New in the Current Orchestration
@@ -107,7 +128,8 @@ The current implementation strengthens existing behavior without reintroducing e
 6. Design evidence is enforced at schema level:
 - `research[].verified_at` is required.
 
-7. Repo verify now includes orchestration integrity checks by default.
+7. Repo verify now enforces lint + format-check + build + tests for both runtime skill packages.
+8. New top-level phases `quality-static`, `quality-tests`, and `release-readiness` are integrated into the canonical stage order.
 
 ## Runtime Architecture
 
@@ -125,42 +147,51 @@ flowchart LR
     G["orchestration-plan"]
     H["orchestration-pmatch"]
     I["orchestration-build"]
-    J["orchestration-postbuild"]
-    K["orchestration-pipeline"]
+    J["orchestration-quality-static"]
+    K["orchestration-quality-tests"]
+    L["orchestration-postbuild"]
+    M["orchestration-release-readiness"]
+    N["orchestration-pipeline"]
   end
 
   subgraph RUNTIME["Runtime skills"]
-    L["quality-gate"]
-    M["multi-model-review"]
+    O["quality-gate"]
+    P["multi-model-review"]
   end
 
   subgraph CONTRACTS["Contracts"]
-    N["contracts/artifacts/*.schema.json"]
-    O["contracts/quality-gate.schema.json"]
+    Q["contracts/artifacts/*.schema.json"]
+    R["contracts/quality-gate.schema.json"]
   end
 
-  D --> L
-  E --> L
-  F --> M
-  F --> L
-  G --> L
-  H --> M
-  H --> L
+  D --> O
+  E --> O
+  F --> P
+  F --> O
+  G --> O
+  H --> P
+  H --> O
   I --> H
-  I --> L
-  J --> L
-
-  L --> N
+  I --> O
+  J --> O
+  K --> O
   L --> O
-  M --> N
+  M --> O
 
-  K --> D
-  K --> E
-  K --> F
-  K --> G
-  K --> H
-  K --> I
-  K --> J
+  O --> Q
+  O --> R
+  P --> Q
+
+  N --> D
+  N --> E
+  N --> F
+  N --> G
+  N --> H
+  N --> I
+  N --> J
+  N --> K
+  N --> L
+  N --> M
 ```
 
 ## Key Contracts (Strengthened)
@@ -183,13 +214,16 @@ flowchart LR
 - `skills/dev-tools/multi-model-review/schemas/output.schema.json`
   - drift output includes required `adjudication` metadata.
 
+- `contracts/artifacts/release-readiness.schema.json`
+  - release decision and ship-readiness evidence are required before closure.
+
 ## Verification Model
 
 `./scripts/verify.sh` runs:
 1. skill validation,
 2. stale reference checks,
 3. orchestration integrity checks,
-4. build+tests for runtime packages.
+4. lint+format-check+build+tests for runtime packages.
 
 The orchestration integrity step (`scripts/check-orchestration-integrity.sh`) verifies:
 - adapter presence for all pipeline stages,
@@ -201,7 +235,7 @@ The orchestration integrity step (`scripts/check-orchestration-integrity.sh`) ve
 
 ```text
 .codex/skills/orchestration/          core orchestration playbook
-.cursor/skills/orchestration-*/       8 Cursor adapters (arm, design, ar, plan, pmatch, build, post-build, pipeline)
+.cursor/skills/orchestration-*/       11 Cursor adapters (arm, design, ar, plan, pmatch, build, quality-static, quality-tests, post-build, release-readiness, pipeline)
 contracts/artifacts/                  artifact schemas
 contracts/quality-gate.schema.json    gate result schema
 skills/dev-tools/quality-gate/        schema + criteria gate runtime
@@ -245,8 +279,8 @@ The contracts and runtime packages are runner-agnostic. Adapt only the orchestra
 ## Local Development
 
 ```bash
-cd skills/dev-tools/quality-gate && npm ci && npm run build && npm test
-cd skills/dev-tools/multi-model-review && npm ci && npm run build && npm test
+cd skills/dev-tools/quality-gate && npm ci && npm run lint && npm run format:check && npm run build && npm test
+cd skills/dev-tools/multi-model-review && npm ci && npm run lint && npm run format:check && npm run build && npm test
 ```
 
 ## Deprecated Material

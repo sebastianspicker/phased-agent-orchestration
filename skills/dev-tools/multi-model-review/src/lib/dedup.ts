@@ -34,9 +34,7 @@ export interface TaggedFinding extends Finding {
   _source: string;
 }
 
-export function deduplicateFindings(
-  taggedFindings: TaggedFinding[],
-): DedupFinding[] {
+export function deduplicateFindings(taggedFindings: TaggedFinding[]): DedupFinding[] {
   const groups: Map<string, TaggedFinding[]> = new Map();
   for (const f of taggedFindings) {
     const cat = f.category.toLowerCase().trim();

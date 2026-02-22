@@ -8,11 +8,14 @@ export type GatePhase =
   | "plan"
   | "pmatch"
   | "build"
+  | "quality-static"
+  | "quality-tests"
   | "denoise"
   | "quality-frontend"
   | "quality-backend"
   | "quality-docs"
-  | "security-review";
+  | "security-review"
+  | "release-readiness";
 
 export interface Criterion {
   name: string;

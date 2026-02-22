@@ -70,7 +70,8 @@ function extractAssertions(body: string): string[] {
 
     const isBullet = /^[-*•]\s+/.test(trimmed);
     const isNumbered = /^\d+[.)]\s+/.test(trimmed);
-    const hasKeyword = /\b(must|shall|should|requires?|constraint|ensures?|guarantees?|limit)\b/i.test(trimmed);
+    const hasKeyword =
+      /\b(must|shall|should|requires?|constraint|ensures?|guarantees?|limit)\b/i.test(trimmed);
 
     if (isBullet || isNumbered || hasKeyword) {
       assertions.push(trimmed.replace(/^[-*•\d.)]+\s*/, "").trim());
@@ -81,14 +82,20 @@ function extractAssertions(body: string): string[] {
 }
 
 function normalize(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /**
  * Calculates significant keyword overlap score between claim and target.
  */
 function claimMatchScore(claim: string, targetText: string): number {
-  const claimWords = normalize(claim).split(" ").filter((w) => w.length > 2);
+  const claimWords = normalize(claim)
+    .split(" ")
+    .filter((w) => w.length > 2);
   if (claimWords.length === 0) return -1;
 
   const targetNorm = normalize(targetText);
@@ -100,8 +107,16 @@ function claimMatchScore(claim: string, targetText: string): number {
 }
 
 function tokenSimilarity(a: string, b: string): number {
-  const tokA = new Set(normalize(a).split(" ").filter((t) => t.length > 1));
-  const tokB = new Set(normalize(b).split(" ").filter((t) => t.length > 1));
+  const tokA = new Set(
+    normalize(a)
+      .split(" ")
+      .filter((t) => t.length > 1),
+  );
+  const tokB = new Set(
+    normalize(b)
+      .split(" ")
+      .filter((t) => t.length > 1),
+  );
   if (tokA.size === 0 && tokB.size === 0) return 1;
   if (tokA.size === 0 || tokB.size === 0) return 0;
 
@@ -134,13 +149,17 @@ function buildFindingsFromClaims(claims: DriftClaim[]): DriftFinding[] {
       description: `Claim is ${claim.verification_status}: "${claim.claim}"`,
       severity: findingSeverity(claim.verification_status),
       claim_ids: [claim.id],
-      mitigation: "Verify this requirement is addressed in the target artifact and update implementation or plan accordingly.",
+      mitigation:
+        "Verify this requirement is addressed in the target artifact and update implementation or plan accordingly.",
     });
   }
   return findings;
 }
 
-function correlateClaims(first: ExtractorClaimSet, second: ExtractorClaimSet): { pairs: CorrelationPair[]; unmatchedSecond: ExtractorClaimInput[] } {
+function correlateClaims(
+  first: ExtractorClaimSet,
+  second: ExtractorClaimSet,
+): { pairs: CorrelationPair[]; unmatchedSecond: ExtractorClaimInput[] } {
   const pairs: CorrelationPair[] = [];
   const usedSecond = new Set<number>();
   const minSimilarity = 0.55;
@@ -208,10 +227,7 @@ function adjudicatePair(
   return { status: "unverifiable", conflict: false };
 }
 
-export function detectDrift(
-  sourceText: string,
-  targetText: string,
-): DriftDetectionResult {
+export function detectDrift(sourceText: string, targetText: string): DriftDetectionResult {
   const sourceSections = parseSections(sourceText);
   const claims: DriftClaim[] = [];
   const findings: DriftFinding[] = [];
@@ -221,9 +237,7 @@ export function detectDrift(
     const assertions = extractAssertions(section.body);
 
     if (assertions.length === 0) {
-      const sectionPresent = normalize(targetText).includes(
-        normalize(section.heading),
-      );
+      const sectionPresent = normalize(targetText).includes(normalize(section.heading));
       const id = `drift-${++claimIdx}`;
       const claimText = `Section "${section.heading}" should be present`;
       const verificationStatus: DriftVerificationStatus = sectionPresent ? "verified" : "violated";
@@ -256,9 +270,10 @@ export function detectDrift(
         id,
         claim: assertion,
         verification_status: verificationStatus,
-        evidence: verificationStatus === "verified"
-          ? `Strong keyword overlap (${Math.round(score * 100)}%) in target`
-          : `Claim from source section "${section.heading}" not fully reflected in target (overlap: ${score < 0 ? "n/a" : `${Math.round(score * 100)}%`})`,
+        evidence:
+          verificationStatus === "verified"
+            ? `Strong keyword overlap (${Math.round(score * 100)}%) in target`
+            : `Claim from source section "${section.heading}" not fully reflected in target (overlap: ${score < 0 ? "n/a" : `${Math.round(score * 100)}%`})`,
         extractor: "rule-based-drift-detector",
       });
 
@@ -267,7 +282,8 @@ export function detectDrift(
           description: `Assertion from "${section.heading}" is ${verificationStatus}: "${assertion}"`,
           severity: findingSeverity(verificationStatus),
           claim_ids: [id],
-          mitigation: "Verify this requirement is addressed in the target artifact and update implementation or plan accordingly.",
+          mitigation:
+            "Verify this requirement is addressed in the target artifact and update implementation or plan accordingly.",
         });
       }
     }
@@ -285,7 +301,9 @@ export function detectDrift(
   };
 }
 
-export function detectDriftFromExtractorClaims(extractorClaimSets: ExtractorClaimSet[]): DriftDetectionResult {
+export function detectDriftFromExtractorClaims(
+  extractorClaimSets: ExtractorClaimSet[],
+): DriftDetectionResult {
   if (extractorClaimSets.length !== 2) {
     throw Object.assign(new Error("dual-extractor mode requires exactly 2 extractor_claim_sets"), {
       code: "E_BAD_INPUT",
@@ -309,7 +327,9 @@ export function detectDriftFromExtractorClaims(extractorClaimSets: ExtractorClai
     }
 
     const claimText = pair.second
-      ? (pair.first.claim.length >= pair.second.claim.length ? pair.first.claim : pair.second.claim)
+      ? pair.first.claim.length >= pair.second.claim.length
+        ? pair.first.claim
+        : pair.second.claim
       : pair.first.claim;
     const confidence = mergeConfidence(pair.first.confidence, pair.second?.confidence);
     claims.push({
@@ -342,7 +362,8 @@ export function detectDriftFromExtractorClaims(extractorClaimSets: ExtractorClai
       mode: "dual-extractor",
       extractors: [first.extractor, second.extractor],
       conflicts_resolved: conflictsResolved,
-      resolution_policy: "both verified => verified; any violated without verified => violated; verified+violated => partial; missing counterpart => unverifiable",
+      resolution_policy:
+        "both verified => verified; any violated without verified => violated; verified+violated => partial; missing counterpart => unverifiable",
     },
   };
 }

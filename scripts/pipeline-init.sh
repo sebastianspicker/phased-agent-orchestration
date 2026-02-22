@@ -21,6 +21,18 @@ cat > "$pipeline_dir/pipeline-state.json" <<EOF
   "run_id": "$run_id",
   "created_at": "$timestamp",
   "current_phase": "arm",
+  "phase_order": [
+    "arm",
+    "design",
+    "adversarial-review",
+    "plan",
+    "pmatch",
+    "build",
+    "quality-static",
+    "quality-tests",
+    "post-build",
+    "release-readiness"
+  ],
   "completed_gates": [],
   "artifacts": {
     "brief": null,

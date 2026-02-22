@@ -14,11 +14,7 @@ const SEVERITY_TO_RISK: Record<Finding["severity"], Risk> = {
   info: "negligible",
 };
 
-const HIGH_COST_CATEGORIES = new Set([
-  "architecture",
-  "feasibility",
-  "performance",
-]);
+const HIGH_COST_CATEGORIES = new Set(["architecture", "feasibility", "performance"]);
 
 function estimateFixCost(finding: Finding): Cost {
   if (HIGH_COST_CATEGORIES.has(finding.category.toLowerCase())) {
@@ -41,10 +37,11 @@ function estimateFixCost(finding: Finding): Cost {
  */
 function recommend(risk: Risk, cost: Cost): Rec {
   if (risk === "catastrophic") return "fix-now";
-  if (risk === "high") return (cost === "trivial" || cost === "low") ? "fix-now" : "fix-before-ship";
-  if (risk === "moderate") return (cost === "trivial" || cost === "low") ? "fix-before-ship" : "defer";
-  if (risk === "low") return (cost === "high" || cost === "prohibitive") ? "wont-fix" : "accept";
-  return (cost === "trivial" || cost === "low") ? "accept" : "wont-fix";
+  if (risk === "high") return cost === "trivial" || cost === "low" ? "fix-now" : "fix-before-ship";
+  if (risk === "moderate")
+    return cost === "trivial" || cost === "low" ? "fix-before-ship" : "defer";
+  if (risk === "low") return cost === "high" || cost === "prohibitive" ? "wont-fix" : "accept";
+  return cost === "trivial" || cost === "low" ? "accept" : "wont-fix";
 }
 
 export function analyzeCostBenefit(findings: Finding[]): CostBenefitEntry[] {

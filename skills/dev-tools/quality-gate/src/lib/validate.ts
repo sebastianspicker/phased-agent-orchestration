@@ -25,9 +25,10 @@ async function getAjv(): Promise<AjvConstructor> {
   if (_AjvClass) return _AjvClass;
   const mod: Record<string, unknown> = await import("ajv");
   const candidate = mod.default ?? mod;
-  const inner = typeof candidate === "function"
-    ? candidate
-    : (candidate as Record<string, unknown>).default ?? candidate;
+  const inner =
+    typeof candidate === "function"
+      ? candidate
+      : ((candidate as Record<string, unknown>).default ?? candidate);
   _AjvClass = inner as AjvConstructor;
   return _AjvClass;
 }
@@ -36,9 +37,10 @@ async function getAddFormats(): Promise<AjvFormatsFn> {
   if (_addFormats) return _addFormats;
   const mod: Record<string, unknown> = await import("ajv-formats");
   const candidate = mod.default ?? mod;
-  const inner = typeof candidate === "function"
-    ? candidate
-    : (candidate as Record<string, unknown>).default ?? candidate;
+  const inner =
+    typeof candidate === "function"
+      ? candidate
+      : ((candidate as Record<string, unknown>).default ?? candidate);
   _addFormats = inner as AjvFormatsFn;
   return _addFormats;
 }

@@ -24,11 +24,14 @@
             "plan",
             "pmatch",
             "build",
+            "quality-static",
+            "quality-tests",
             "denoise",
             "quality-frontend",
             "quality-backend",
             "quality-docs",
-            "security-review"
+            "security-review",
+            "release-readiness"
           ],
           "description": "Pipeline phase this gate belongs to"
         },

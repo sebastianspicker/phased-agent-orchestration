@@ -18,8 +18,9 @@ dist/
 Thumbs.db
 .idea/
 .vscode/
-.cursor/
+.cursor/*
 !.cursor/skills/
+!.cursor/skills/**
 
 # Test output
 coverage/

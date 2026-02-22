@@ -2,6 +2,18 @@
   "run_id": "",
   "created_at": "",
   "current_phase": "arm",
+  "phase_order": [
+    "arm",
+    "design",
+    "adversarial-review",
+    "plan",
+    "pmatch",
+    "build",
+    "quality-static",
+    "quality-tests",
+    "post-build",
+    "release-readiness"
+  ],
   "completed_gates": [],
   "artifacts": {
     "brief": null,

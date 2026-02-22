@@ -28,13 +28,12 @@ export async function evaluateGate(
   }
 
   const criteriaResults = evaluateCriteria(input.artifact, input.criteria);
-  const blockingFailures = criteriaResults
-    .filter((r) => !r.passed)
-    .map((r) => r.name);
+  const blockingFailures = criteriaResults.filter((r) => !r.passed).map((r) => r.name);
 
   logs.push(`Criteria evaluated: ${criteriaResults.length}, failures: ${blockingFailures.length}`);
 
-  const status: GateStatus = (!schemaValidation.valid || blockingFailures.length > 0) ? "fail" : "pass";
+  const status: GateStatus =
+    !schemaValidation.valid || blockingFailures.length > 0 ? "fail" : "pass";
 
   return {
     data: {

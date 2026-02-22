@@ -6,12 +6,15 @@
     "node": ">=20"
   },
   "scripts": {
+    "lint": "biome lint --config-path ../../../biome.json src",
+    "format:check": "biome check --formatter-enabled=true --linter-enabled=false --config-path ../../../biome.json src",
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "devDependencies": {
     "@types/node": "20.19.0",
+    "@biomejs/biome": "^1.9.4",
     "ajv": "^8.17.1",
     "typescript": "5.5.4",
     "vitest": "4.0.18"

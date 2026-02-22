@@ -68,6 +68,8 @@ echo '{ ... }' | node dist/index.js
 
 ```bash
 npm install
+npm run lint
+npm run format:check
 npm run build
 npm test
 ```

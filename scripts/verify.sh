@@ -12,6 +12,8 @@ for pkg in "skills/dev-tools/quality-gate" "skills/dev-tools/multi-model-review"
   (
     cd "$root_dir/$pkg"
     npm ci
+    npm run lint
+    npm run format:check
     npm run build
     npm test
   )
