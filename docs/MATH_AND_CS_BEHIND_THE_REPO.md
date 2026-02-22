@@ -33,17 +33,17 @@ Model a task as latent _intent_ $I$ (requirements, constraints, goals) that must
 A minimal information-theoretic lens:
 
 - **Entropy**:
-  $$
-  H(X) = -\sum_{x} p(x)\log p(x)
-  $$
+$$
+H(X) = -\sum_{x} p(x)\log p(x)
+$$
 
 - **Mutual information**:
-  $$
-  I(I;C) = H(I) - H(I \mid C)
-  $$
-  $$
-  I(C;Y) = H(Y) - H(Y \mid C)
-  $$
+$$
+I(I;C) = H(I) - H(I \mid C)
+$$
+$$
+I(C;Y) = H(Y) - H(Y \mid C)
+$$
 
 A central quantity for prompt engineering is not “how much context we have,” but **how much intent-relevant information per token** the context contains.
 
@@ -142,15 +142,15 @@ This is exactly what the repository implements: artifact handoffs and gates repl
 Model agent collaboration as a graph $G=(V,E)$ where vertices are agents and edges are communication dependencies.
 
 - In a fully connected team of $n$ agents:
-  $$
-  |E_{\text{complete}}| = \binom{n}{2} = \frac{n(n-1)}{2}
-  $$
+$$
+|E_{\text{complete}}| = \binom{n}{2} = \frac{n(n-1)}{2}
+$$
   This is the classic “channels of communication” model often discussed in software engineering coordination arguments (popularly associated with Brooks’ observations) [Brooks1975].
 
 - In a hub-and-spoke topology (one orchestrator + $n-1$ workers):
-  $$
-  |E_{\text{star}}| = n-1
-  $$
+$$
+|E_{\text{star}}| = n-1
+$$
 
 So topology changes coordination complexity from $\Theta(n^2)$ to $\Theta(n)$.
 
@@ -397,19 +397,19 @@ Where $Z$ is the phase context and $B$ is a tight budget. Here the artifact is a
 To evaluate whether phased orchestration helps in your environment, track:
 
 1. **Gate failure rate per phase**
-   $$
-   \hat{p}_{\text{fail}}(k)=\frac{\#\text{fails in phase }k}{\#\text{runs in phase }k}
-   $$
+$$
+\hat{p}_{\text{fail}}(k)=\frac{\#\text{fails in phase }k}{\#\text{runs in phase }k}
+$$
 
 2. **Drift score trend**
-   $$
-   \mathrm{Drift}(S,T)\ \text{over time}
-   $$
+$$
+\mathrm{Drift}(S,T)\ \text{over time}
+$$
 
 3. **Review dedup ratio**
-   $$
-   \rho=\frac{\#\text{raw findings}}{\#\text{deduplicated findings}}
-   $$
+$$
+\rho=\frac{\#\text{raw findings}}{\#\text{deduplicated findings}}
+$$
    High $\rho$ suggests large redundancy and thus high coordination noise.
 
 4. **Rework cost proxy**
