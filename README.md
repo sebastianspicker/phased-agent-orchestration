@@ -30,6 +30,35 @@ This orchestration addresses those problems directly:
 - require explicit ship readiness evidence (`release-readiness`),
 - close security findings before shipping (`security-review` loop).
 
+## Scientific Intuition (Beginner-Friendly)
+
+The scientific docs in this repo explain the same idea in math form:
+
+- `docs/SCIENTIFIC_FOUNDATION.md`
+- `docs/MATH_AND_CS_BEHIND_THE_REPO.md`
+- `docs/SCIENTIFIC_IMPLEMENTATION_MAP.md`
+
+Here is the plain-language version.
+
+1. More context is not always better.
+If we define information density as:
+`eta(C) = I(I;C) / |C|`
+then adding many irrelevant tokens usually increases `|C|` faster than useful information `I(I;C)`. So quality can drop even when context gets larger.
+
+1. More parallel contributors can create communication overhead.
+For `n` participants:
+
+- fully connected communication channels: `n(n-1)/2`
+- hub-and-spoke communication channels: `n-1`
+
+This is why the pipeline uses phased handoffs and a lead-orchestrated flow instead of free-form all-to-all coordination.
+
+1. Gates reduce error propagation.
+If a phase introduces defects with probability `p`, and a gate catches defects with probability `d`, then:
+`p_res = p(1-d)`
+
+Lower residual error per phase compounds across the pipeline, which is why every stage has a required pass/fail gate before advancing.
+
 ## Delivery Stages
 
 ```text
