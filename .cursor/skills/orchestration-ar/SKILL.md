@@ -51,6 +51,7 @@ Repeat until remaining unresolved items are low-priority and consciously accepte
 ### 6. Build artifact
 Write `review.json` conforming to `contracts/artifacts/review-report.schema.json`:
 - `.pipeline/runs/<run-id>/review.json`
+- Include `context_manifest` with loaded files/docs and token estimate.
 
 ### 7. Gate evaluation
 Validate:

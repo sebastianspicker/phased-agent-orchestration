@@ -53,6 +53,38 @@ function resolvePath(obj: Record<string, unknown>, path: string): unknown {
   return current;
 }
 
+function collectStringValues(value: unknown): string[] {
+  if (typeof value === "string") {
+    return [value];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => collectStringValues(entry));
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).flatMap((entry) =>
+      collectStringValues(entry),
+    );
+  }
+  return [];
+}
+
+function extractTraceId(value: unknown): string | undefined {
+  if (typeof value === "string" && value.length > 0) {
+    return value;
+  }
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  if (typeof record.trace_id === "string" && record.trace_id.length > 0) {
+    return record.trace_id;
+  }
+  if (typeof record.id === "string" && record.id.length > 0) {
+    return record.id;
+  }
+  return undefined;
+}
+
 function checkFieldExists(artifact: Record<string, unknown>, path: string): CriterionResult {
   const val = resolvePath(artifact, path);
   const exists = val !== undefined && val !== null;
@@ -115,6 +147,153 @@ function checkCountMin(
     name: "",
     passed,
     evidence: `Field "${path}" has ${val.length} item(s), minimum required: ${min}`,
+  };
+}
+
+function checkCountMax(
+  artifact: Record<string, unknown>,
+  path: string,
+  maxValue: unknown,
+): CriterionResult {
+  const val = resolvePath(artifact, path);
+  if (!Array.isArray(val)) {
+    return {
+      name: "",
+      passed: false,
+      evidence: `Field "${path}" is not an array`,
+    };
+  }
+  if (
+    typeof maxValue !== "number" ||
+    !Number.isFinite(maxValue) ||
+    !Number.isInteger(maxValue) ||
+    maxValue < 0
+  ) {
+    return {
+      name: "",
+      passed: false,
+      evidence: "count-max value must be a non-negative integer",
+    };
+  }
+  const max = maxValue;
+  const passed = val.length <= max;
+  return {
+    name: "",
+    passed,
+    evidence: `Field "${path}" has ${val.length} item(s), maximum allowed: ${max}`,
+  };
+}
+
+function checkNumberMax(
+  artifact: Record<string, unknown>,
+  path: string,
+  maxValue: unknown,
+): CriterionResult {
+  const val = resolvePath(artifact, path);
+  if (typeof val !== "number" || !Number.isFinite(val)) {
+    return {
+      name: "",
+      passed: false,
+      evidence: `Field "${path}" is not a finite number`,
+    };
+  }
+  if (typeof maxValue !== "number" || !Number.isFinite(maxValue) || maxValue < 0) {
+    return {
+      name: "",
+      passed: false,
+      evidence: "number-max value must be a non-negative number",
+    };
+  }
+  const passed = val <= maxValue;
+  return {
+    name: "",
+    passed,
+    evidence: `Field "${path}" value is ${val}, maximum allowed: ${maxValue}`,
+  };
+}
+
+function checkCoverageMin(
+  artifact: Record<string, unknown>,
+  criterion: Criterion,
+): CriterionResult {
+  const threshold = criterion.value;
+  if (
+    typeof threshold !== "number" ||
+    !Number.isFinite(threshold) ||
+    threshold < 0 ||
+    threshold > 1
+  ) {
+    return {
+      name: "",
+      passed: false,
+      evidence: "coverage-min value must be a number between 0 and 1",
+    };
+  }
+  if (!criterion.source_path) {
+    return {
+      name: "",
+      passed: false,
+      evidence: "coverage-min requires source_path",
+    };
+  }
+  if (!Array.isArray(criterion.target_paths) || criterion.target_paths.length === 0) {
+    return {
+      name: "",
+      passed: false,
+      evidence: "coverage-min requires non-empty target_paths",
+    };
+  }
+
+  const source = resolvePath(artifact, criterion.source_path);
+  if (!Array.isArray(source)) {
+    return {
+      name: "",
+      passed: false,
+      evidence: `Field "${criterion.source_path}" is not an array`,
+    };
+  }
+
+  const filtered = source.filter((entry) => {
+    if (!criterion.source_filter_path) {
+      return true;
+    }
+    if (entry === null || typeof entry !== "object" || Array.isArray(entry)) {
+      return false;
+    }
+    const filterValue = resolvePath(entry as Record<string, unknown>, criterion.source_filter_path);
+    return filterValue === criterion.source_filter_value;
+  });
+
+  const sourceIds = filtered
+    .map((entry) => extractTraceId(entry))
+    .filter((id): id is string => typeof id === "string");
+
+  if (sourceIds.length === 0) {
+    return {
+      name: "",
+      passed: true,
+      evidence: "coverage-min source set is empty after filtering; treated as satisfied",
+    };
+  }
+
+  const covered = new Set<string>();
+  for (const targetPath of criterion.target_paths) {
+    const targetVal = resolvePath(artifact, targetPath);
+    const strings = collectStringValues(targetVal);
+    for (const value of strings) {
+      covered.add(value);
+    }
+  }
+
+  const matched = sourceIds.filter((id) => covered.has(id));
+  const ratio = matched.length / sourceIds.length;
+  const missing = sourceIds.filter((id) => !covered.has(id));
+  const passed = ratio >= threshold;
+
+  return {
+    name: "",
+    passed,
+    evidence: `coverage=${ratio.toFixed(4)} threshold=${threshold.toFixed(4)} matched=${matched.length}/${sourceIds.length} missing=${missing.join(", ") || "none"}`,
   };
 }
 
@@ -188,6 +367,15 @@ export function evaluateCriteria(
         break;
       case "count-min":
         result = checkCountMin(artifact, c.path, c.value);
+        break;
+      case "count-max":
+        result = checkCountMax(artifact, c.path, c.value);
+        break;
+      case "number-max":
+        result = checkNumberMax(artifact, c.path, c.value);
+        break;
+      case "coverage-min":
+        result = checkCoverageMin(artifact, c);
         break;
       case "regex-match":
         result = checkRegexMatch(artifact, c.path, c.value);

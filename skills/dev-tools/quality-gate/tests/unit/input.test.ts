@@ -87,4 +87,52 @@ describe("validateInput", () => {
     });
     expect(() => validateInput(input)).toThrow("regex-match criterion requires non-empty string value");
   });
+
+  it("requires numeric count-max values", () => {
+    const input = makeInput({
+      criteria: [
+        {
+          name: "max-items",
+          type: "count-max",
+          path: "items",
+          value: "2" as unknown as number,
+        },
+      ],
+    });
+    expect(() => validateInput(input)).toThrow(
+      "count-max criterion requires a non-negative integer value",
+    );
+  });
+
+  it("requires non-negative number number-max values", () => {
+    const input = makeInput({
+      criteria: [
+        {
+          name: "budget",
+          type: "number-max",
+          path: "token_estimate",
+          value: -1,
+        },
+      ],
+    });
+    expect(() => validateInput(input)).toThrow(
+      "number-max criterion requires a non-negative number value",
+    );
+  });
+
+  it("requires valid coverage-min shape", () => {
+    const input = makeInput({
+      criteria: [
+        {
+          name: "coverage",
+          type: "coverage-min",
+          path: "requirements",
+          value: 1,
+          source_path: "requirements",
+          target_paths: [],
+        },
+      ],
+    });
+    expect(() => validateInput(input)).toThrow("coverage-min criterion requires non-empty target_paths");
+  });
 });

@@ -41,6 +41,16 @@
         "required": ["constraint", "original_type", "validated_type", "evaluation"],
         "properties": {
           "constraint": { "type": "string", "minLength": 1 },
+          "trace_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable trace identifier for this constraint classification."
+          },
+          "covers_requirement_ids": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Requirement IDs or trace IDs covered by this design constraint."
+          },
           "original_type": { "type": "string", "enum": ["hard", "soft"] },
           "validated_type": { "type": "string", "enum": ["hard", "soft"] },
           "evaluation": { "type": "string", "minLength": 1 },
@@ -121,6 +131,41 @@
           "changes": { "type": "string", "minLength": 1 },
           "rationale": { "type": "string", "minLength": 1 }
         }
+      }
+    },
+    "context_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selection_policy", "ordering_policy", "files_loaded", "docs_loaded"],
+      "properties": {
+        "selection_policy": { "type": "string", "minLength": 1 },
+        "ordering_policy": { "type": "string", "minLength": 1 },
+        "files_loaded": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "bytes"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "bytes": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "docs_loaded": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["url", "retrieved_at"],
+            "properties": {
+              "url": { "type": "string", "format": "uri" },
+              "retrieved_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "token_estimate": { "type": "integer", "minimum": 0 },
+        "char_count_estimate": { "type": "integer", "minimum": 0 }
       }
     }
   }

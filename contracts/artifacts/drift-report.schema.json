@@ -35,13 +35,23 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "claim", "verification_status", "evidence", "extractor"],
+        "required": ["id", "claim", "claim_type", "verification_status", "evidence", "extractor"],
         "properties": {
           "id": { "type": "string", "minLength": 1 },
+          "trace_id": { "type": "string", "minLength": 1 },
           "claim": { "type": "string", "minLength": 1 },
+          "claim_type": {
+            "type": "string",
+            "enum": ["interface", "invariant", "security", "performance", "docs"]
+          },
+          "covers_requirement_ids": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
           "verification_status": { "type": "string", "enum": ["verified", "violated", "partial", "unverifiable"] },
           "evidence": { "type": "string", "minLength": 1 },
           "extractor": { "type": "string", "minLength": 1, "description": "Extractor/adjudicator identifier for this claim." },
+          "drift_score": { "type": "number", "minimum": 0, "maximum": 1 },
           "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
         }
       }
@@ -54,6 +64,10 @@
         "required": ["description", "severity", "claim_ids"],
         "properties": {
           "description": { "type": "string", "minLength": 1 },
+          "claim_type": {
+            "type": "string",
+            "enum": ["interface", "invariant", "security", "performance", "docs"]
+          },
           "severity": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
           "claim_ids": {
             "type": "array",
@@ -77,6 +91,41 @@
         },
         "conflicts_resolved": { "type": "integer", "minimum": 0 },
         "resolution_policy": { "type": "string", "minLength": 1 }
+      }
+    },
+    "context_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selection_policy", "ordering_policy", "files_loaded", "docs_loaded"],
+      "properties": {
+        "selection_policy": { "type": "string", "minLength": 1 },
+        "ordering_policy": { "type": "string", "minLength": 1 },
+        "files_loaded": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "bytes"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "bytes": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "docs_loaded": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["url", "retrieved_at"],
+            "properties": {
+              "url": { "type": "string", "format": "uri" },
+              "retrieved_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "token_estimate": { "type": "integer", "minimum": 0 },
+        "char_count_estimate": { "type": "integer", "minimum": 0 }
       }
     }
   }

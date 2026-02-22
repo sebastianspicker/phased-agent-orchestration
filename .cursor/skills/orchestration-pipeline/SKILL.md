@@ -18,6 +18,7 @@ description: "Cursor adapter orchestrator for the full phased workflow. Advances
 - Human control points: critical transitions require explicit approvals.
 - Capability allocation: use tiered model assignment by stage responsibility.
 - Context minimization: transfer only required artifacts between stages.
+- Policy-driven parallelism: choose reviewer/builder fan-out via `config.orchestration_policy`.
 
 ## Stage order
 
@@ -46,6 +47,7 @@ For each stage:
    - `post-build` -> `orchestration-postbuild`
    - `release-readiness` -> `orchestration-release-readiness`
 3. Validate output using quality-gate and schema contracts
+   - enforce `context_manifest` budget checks (`count-max`, `number-max`) when enabled
 4. Persist gate result under `.pipeline/runs/<run-id>/gates/`
 5. Advance state only when gate passes
 6. Stop immediately on gate failure and report blockers
@@ -72,7 +74,12 @@ After post-build gate pass:
 ### 6. Persist state transitions
 Update `.pipeline/pipeline-state.json` after each stage transition.
 
-### 7. Security exception handling
+### 7. Trace and evaluation artifacts
+- Append execution events to `.pipeline/runs/<run-id>/trace.jsonl`.
+- Run `trace-collector` to generate `.pipeline/runs/<run-id>/trace.summary.json`.
+- When requested, aggregate matrix evaluations to `.pipeline/evaluations/<eval-id>/evaluation-report.json`.
+
+### 8. Security exception handling
 Any accepted security risk must be explicit and include:
 - owner,
 - justification,

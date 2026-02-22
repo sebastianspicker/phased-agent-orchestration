@@ -1,6 +1,7 @@
 import type {
   DriftAdjudication,
   DriftClaim,
+  DriftClaimType,
   DriftFinding,
   DriftVerificationStatus,
   ExtractorClaimInput,
@@ -23,6 +24,8 @@ interface CorrelationPair {
   first: ExtractorClaimInput;
   second?: ExtractorClaimInput;
 }
+
+const TAXONOMY: DriftClaimType[] = ["interface", "invariant", "security", "performance", "docs"];
 
 /**
  * Splits a document into sections by markdown-style headings.
@@ -102,6 +105,36 @@ function normalize(text: string): string {
     .trim();
 }
 
+function classifyClaimType(claim: string): DriftClaimType {
+  const text = normalize(claim);
+  if (
+    /\b(auth|jwt|csrf|xss|secret|encryption|token|permission|rbac|owasp|vulnerability|security)\b/.test(
+      text,
+    )
+  ) {
+    return "security";
+  }
+  if (
+    /\b(latency|throughput|cache|performance|memory|cpu|scale|rate limit|qps|timeout)\b/.test(text)
+  ) {
+    return "performance";
+  }
+  if (/\b(readme|docs|documentation|changelog|guide|example)\b/.test(text)) {
+    return "docs";
+  }
+  if (/\b(api|endpoint|route|schema|contract|interface|payload|request|response)\b/.test(text)) {
+    return "interface";
+  }
+  return "invariant";
+}
+
+function toDriftScore(status: DriftVerificationStatus): number {
+  if (status === "verified") return 0;
+  if (status === "partial") return 0.5;
+  if (status === "violated") return 1;
+  return 0.75;
+}
+
 /**
  * Calculates significant keyword overlap score between claim and target.
  */
@@ -160,6 +193,7 @@ function buildFindingsFromClaims(claims: DriftClaim[]): DriftFinding[] {
     if (claim.verification_status === "verified") continue;
     findings.push({
       description: `Claim is ${claim.verification_status}: "${claim.claim}"`,
+      claim_type: claim.claim_type,
       severity: findingSeverity(claim.verification_status),
       claim_ids: [claim.id],
       mitigation:
@@ -261,11 +295,13 @@ export function detectDrift(sourceText: string, targetText: string): DriftDetect
       claims.push({
         id,
         claim: claimText,
+        claim_type: classifyClaimType(claimText),
         verification_status: verificationStatus,
         evidence: sectionPresent
           ? `Found section heading "${section.heading}" in target document`
           : `Source has heading "${section.heading}" but target does not`,
         extractor: "rule-based-drift-detector",
+        drift_score: toDriftScore(verificationStatus),
       });
       if (!sectionPresent) {
         findings.push({
@@ -286,17 +322,20 @@ export function detectDrift(sourceText: string, targetText: string): DriftDetect
       claims.push({
         id,
         claim: assertion,
+        claim_type: classifyClaimType(assertion),
         verification_status: verificationStatus,
         evidence:
           verificationStatus === "verified"
             ? `Strong keyword overlap (${Math.round(score * 100)}%) in target`
             : `Claim from source section "${section.heading}" not fully reflected in target (overlap: ${score < 0 ? "n/a" : `${Math.round(score * 100)}%`})`,
         extractor: "rule-based-drift-detector",
+        drift_score: toDriftScore(verificationStatus),
       });
 
       if (verificationStatus !== "verified") {
         findings.push({
           description: `Assertion from "${section.heading}" is ${verificationStatus}: "${assertion}"`,
+          claim_type: classifyClaimType(assertion),
           severity: findingSeverity(verificationStatus),
           claim_ids: [id],
           mitigation:
@@ -352,11 +391,13 @@ export function detectDriftFromExtractorClaims(
     claims.push({
       id: `drift-${++claimIdx}`,
       claim: claimText,
+      claim_type: pair.first.claim_type ?? pair.second?.claim_type ?? classifyClaimType(claimText),
       verification_status: adjudicated.status,
       evidence: pair.second
         ? `${first.extractor}: ${pair.first.verification_status} (${pair.first.evidence}) | ${second.extractor}: ${pair.second.verification_status} (${pair.second.evidence})`
         : `${first.extractor}: ${pair.first.verification_status} (${pair.first.evidence}); no corresponding claim from ${second.extractor}`,
       extractor: `dual-adjudicator:${first.extractor}+${second.extractor}`,
+      drift_score: toDriftScore(adjudicated.status),
       confidence,
     });
   }
@@ -365,9 +406,11 @@ export function detectDriftFromExtractorClaims(
     claims.push({
       id: `drift-${++claimIdx}`,
       claim: claim.claim,
+      claim_type: claim.claim_type ?? classifyClaimType(claim.claim),
       verification_status: "unverifiable",
       evidence: `${second.extractor}: ${claim.verification_status} (${claim.evidence}); no corresponding claim from ${first.extractor}`,
       extractor: `dual-adjudicator:${first.extractor}+${second.extractor}`,
+      drift_score: toDriftScore("unverifiable"),
       confidence: claim.confidence,
     });
   }
@@ -382,5 +425,52 @@ export function detectDriftFromExtractorClaims(
       resolution_policy:
         "both verified => verified; any violated without verified => violated; verified+violated => partial; missing counterpart => unverifiable",
     },
+  };
+}
+
+export interface DriftQualityClassMetrics {
+  precision: number;
+  recall: number;
+  f1: number;
+}
+
+export interface DriftQualityMetrics {
+  overall: DriftQualityClassMetrics;
+  by_class: Record<DriftClaimType, DriftQualityClassMetrics>;
+}
+
+function toMetrics(tp: number, fp: number, fn: number): DriftQualityClassMetrics {
+  const precision = tp + fp === 0 ? 0 : tp / (tp + fp);
+  const recall = tp + fn === 0 ? 0 : tp / (tp + fn);
+  const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
+  return { precision, recall, f1 };
+}
+
+export function evaluateDriftQuality(
+  expected: DriftClaimType[],
+  predicted: DriftClaimType[],
+): DriftQualityMetrics {
+  const byClass = {} as Record<DriftClaimType, DriftQualityClassMetrics>;
+
+  let totalTp = 0;
+  let totalFp = 0;
+  let totalFn = 0;
+
+  for (const taxonomyClass of TAXONOMY) {
+    const expectedCount = expected.filter((entry) => entry === taxonomyClass).length;
+    const predictedCount = predicted.filter((entry) => entry === taxonomyClass).length;
+    const tp = Math.min(expectedCount, predictedCount);
+    const fp = Math.max(0, predictedCount - expectedCount);
+    const fn = Math.max(0, expectedCount - predictedCount);
+
+    totalTp += tp;
+    totalFp += fp;
+    totalFn += fn;
+    byClass[taxonomyClass] = toMetrics(tp, fp, fn);
+  }
+
+  return {
+    overall: toMetrics(totalTp, totalFp, totalFn),
+    by_class: byClass,
   };
 }

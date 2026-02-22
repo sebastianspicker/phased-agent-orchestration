@@ -27,6 +27,7 @@ Launch one Task subagent per task group. Each builder receives only:
 - its own task set,
 - required file excerpts,
 - relevant verification commands.
+- Enforce `config.orchestration_policy.max_builders` and active budget constraints from pipeline state.
 
 ### 2. Supervise and unblock
 Lead tracks progress, resolves blockers, and enforces ownership boundaries. Lead does not author production code.
@@ -46,6 +47,7 @@ Require:
 - verification commands successful,
 - no unresolved high-severity drift,
 - tests passing.
+- `coverage-min` requirement gate for MUST requirements remains satisfied after implementation changes.
 
 Write gate output to:
 - `.pipeline/runs/<run-id>/gates/build-gate.json`

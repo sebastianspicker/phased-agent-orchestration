@@ -12,5 +12,12 @@
     "parameters": {
       "$ref": "../../skills/dev-tools/multi-model-review/schemas/input.schema.json"
     }
+  },
+  {
+    "name": "dev_tools_trace_collector",
+    "description": "Validates execution trace event streams and computes deterministic run-level metrics for latency, costs, failures, gate outcomes, and phase transitions.",
+    "parameters": {
+      "$ref": "../../skills/dev-tools/trace-collector/schemas/input.schema.json"
+    }
   }
 ]

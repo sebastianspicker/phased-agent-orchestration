@@ -40,7 +40,15 @@ echo '{ ... }' | node dist/index.js
 | `field-exists` | Field at `path` exists and is non-null | — |
 | `field-empty` | Array at `path` has length 0 | — |
 | `count-min` | Array at `path` has at least N items | number |
+| `count-max` | Array at `path` has at most N items | number |
+| `number-max` | Number at `path` is less than or equal to N | number |
+| `coverage-min` | Coverage ratio of source IDs found in target paths meets threshold | number (0..1) |
 | `regex-match` | String at `path` matches regex | pattern string |
+
+For `coverage-min`, supply:
+- `source_path` (array path),
+- optional `source_filter_path` and `source_filter_value`,
+- `target_paths` (one or more paths inspected for coverage IDs).
 
 ### Output format
 

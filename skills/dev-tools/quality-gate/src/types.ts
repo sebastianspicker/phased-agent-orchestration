@@ -1,4 +1,11 @@
-export type CriterionType = "field-exists" | "field-empty" | "count-min" | "regex-match";
+export type CriterionType =
+  | "field-exists"
+  | "field-empty"
+  | "count-min"
+  | "count-max"
+  | "number-max"
+  | "coverage-min"
+  | "regex-match";
 
 export type GateStatus = "pass" | "fail" | "warn";
 export type GatePhase =
@@ -22,6 +29,10 @@ export interface Criterion {
   type: CriterionType;
   path: string;
   value?: unknown;
+  source_path?: string;
+  source_filter_path?: string;
+  source_filter_value?: unknown;
+  target_paths?: string[];
 }
 
 export interface Input {

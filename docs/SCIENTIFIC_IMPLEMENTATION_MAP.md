@@ -44,6 +44,7 @@ These files define _how_ a runner should execute each stage and what artifacts/g
 
 - Quality gate runtime: **`../skills/dev-tools/quality-gate/`**
 - Review/drift runtime: **`../skills/dev-tools/multi-model-review/`**
+- Trace runtime: **`../skills/dev-tools/trace-collector/`**
 - Artifact & gate schemas: **`../contracts/`**
 
 These components are intentionally **API-independent** (no paid model API calls required). They validate, merge, adjudicate, and gate.
@@ -61,6 +62,8 @@ Key contracts include:
 - `../contracts/artifacts/drift-report.schema.json`
 - `../contracts/artifacts/quality-report.schema.json`
 - `../contracts/artifacts/release-readiness.schema.json`
+- `../contracts/artifacts/execution-trace.schema.json`
+- `../contracts/artifacts/evaluation-report.schema.json`
 
 ### 2.4 Gate schema (universal)
 
@@ -237,6 +240,9 @@ The input schema supports criteria types such as:
 - `field-exists`
 - `field-empty`
 - `count-min`
+- `count-max`
+- `number-max`
+- `coverage-min`
 - `regex-match`
 
 This means phases can express gates like:
@@ -265,6 +271,19 @@ It produces structured outputs with:
 
 Crucially: it performs **no paid API calls**; it expects the runner (Cursor tasks / agent teams) to generate the raw findings/claims, and then it “institutionalizes” them into a deterministic artifact.
 
+### 4.3 `trace-collector` runtime skill
+
+Location:
+
+- `../skills/dev-tools/trace-collector/`
+
+It validates execution traces and summarizes run-level system signals:
+
+- validates each event against `../contracts/artifacts/execution-trace.schema.json`
+- aggregates event/gate counts and phase durations
+- tracks retry/failure counters and token/cost totals
+- writes deterministic run summaries used by evaluation aggregation
+
 ---
 
 ## 5) Verification harness: preventing the orchestration from rotting
@@ -284,7 +303,7 @@ This performs:
 1. skill validation
 2. stale reference checks
 3. orchestration integrity checks
-4. lint/format-check/build/test for runtime packages
+4. lint/format-check/build/test for runtime packages (`quality-gate`, `multi-model-review`, `trace-collector`)
 
 ### 5.2 Orchestration integrity checks (why this matters)
 

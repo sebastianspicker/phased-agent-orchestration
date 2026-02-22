@@ -8,7 +8,7 @@ The core is designed to work in any environment that can read/write files and ru
 
 - Contracts: `contracts/` (JSON Schemas for artifacts and quality gates)
 - Orchestration playbook: `.codex/skills/orchestration/SKILL.md`
-- Runtime skills (no paid model APIs): `skills/dev-tools/*`
+- Runtime skills (no paid model APIs): `skills/dev-tools/*` (`quality-gate`, `multi-model-review`, `trace-collector`)
 - Run state scaffolding: `scripts/pipeline-init.sh` + `.pipeline/` (gitignored)
 
 Canonical top-level stage order:

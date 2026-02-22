@@ -15,7 +15,7 @@ From repo root:
 ```
 This runs:
 - `python3 scripts/codex/validate_skills.py`
-- `npm ci`, `npm run lint`, `npm run format:check`, `npm run build`, `npm test` for both runtime skill packages.
+- `npm ci`, `npm run lint`, `npm run format:check`, `npm run build`, `npm test` for all runtime skill packages (`quality-gate`, `multi-model-review`, `trace-collector`).
 
 ## Fast loop (per-package)
 From repo root:
@@ -33,6 +33,14 @@ npm test
 ```
 ```bash
 cd skills/dev-tools/multi-model-review
+npm ci
+npm run lint
+npm run format:check
+npm run build
+npm test
+```
+```bash
+cd skills/dev-tools/trace-collector
 npm ci
 npm run lint
 npm run format:check
@@ -67,6 +75,11 @@ npm audit --audit-level=high
 ```
 ```bash
 cd skills/dev-tools/multi-model-review
+npm ci
+npm audit --audit-level=high
+```
+```bash
+cd skills/dev-tools/trace-collector
 npm ci
 npm audit --audit-level=high
 ```

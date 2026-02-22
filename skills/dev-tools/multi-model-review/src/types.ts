@@ -7,6 +7,7 @@ export type FactCheckStatus = "confirmed" | "refuted" | "inconclusive";
 export type MitigationStatus = "mitigated" | "deferred" | "accepted";
 export type DriftVerificationStatus = "verified" | "violated" | "partial" | "unverifiable";
 export type DriftMode = "heuristic" | "dual-extractor";
+export type DriftClaimType = "interface" | "invariant" | "security" | "performance" | "docs";
 
 export interface Action {
   type: ActionType;
@@ -20,6 +21,7 @@ export interface Document {
 export interface ExtractorClaimInput {
   id: string;
   claim: string;
+  claim_type?: DriftClaimType;
   verification_status: DriftVerificationStatus;
   evidence: string;
   confidence?: number;
@@ -101,14 +103,18 @@ export interface TargetDocumentRef {
 export interface DriftClaim {
   id: string;
   claim: string;
+  claim_type: DriftClaimType;
   verification_status: DriftVerificationStatus;
   evidence: string;
   extractor: string;
+  drift_score?: number;
+  covers_requirement_ids?: string[];
   confidence?: number;
 }
 
 export interface DriftFinding {
   description: string;
+  claim_type?: DriftClaimType;
   severity: "critical" | "high" | "medium" | "low";
   claim_ids: string[];
   mitigation?: string;

@@ -173,6 +173,10 @@
                   "properties": {
                     "id": { "type": "string", "minLength": 1 },
                     "claim": { "type": "string", "minLength": 1 },
+                    "claim_type": {
+                      "type": "string",
+                      "enum": ["interface", "invariant", "security", "performance", "docs"]
+                    },
                     "verification_status": { "type": "string", "enum": ["verified", "violated", "partial", "unverifiable"] },
                     "evidence": { "type": "string", "minLength": 1 },
                     "confidence": { "type": "number", "minimum": 0, "maximum": 1 }

@@ -116,6 +116,92 @@ describe("evaluateCriteria", () => {
     });
   });
 
+  describe("count-max", () => {
+    it("passes when count is below threshold", () => {
+      const results = evaluateCriteria(
+        { items: [1, 2] },
+        [{ name: "max-items", type: "count-max", path: "items", value: 3 }],
+      );
+      expect(results[0].passed).toBe(true);
+    });
+
+    it("fails when count exceeds threshold", () => {
+      const results = evaluateCriteria(
+        { items: [1, 2, 3, 4] },
+        [{ name: "max-items", type: "count-max", path: "items", value: 2 }],
+      );
+      expect(results[0].passed).toBe(false);
+      expect(results[0].evidence).toContain("maximum allowed: 2");
+    });
+  });
+
+  describe("number-max", () => {
+    it("passes when number is within budget", () => {
+      const results = evaluateCriteria(
+        { token_estimate: 900 },
+        [{ name: "token-budget", type: "number-max", path: "token_estimate", value: 1000 }],
+      );
+      expect(results[0].passed).toBe(true);
+    });
+
+    it("fails when number exceeds budget", () => {
+      const results = evaluateCriteria(
+        { token_estimate: 1200 },
+        [{ name: "token-budget", type: "number-max", path: "token_estimate", value: 1000 }],
+      );
+      expect(results[0].passed).toBe(false);
+    });
+  });
+
+  describe("coverage-min", () => {
+    it("passes when must requirements are fully covered", () => {
+      const artifact = {
+        requirements: [
+          { id: "REQ-1", priority: "must" },
+          { id: "REQ-2", priority: "must" },
+        ],
+        test_links: [["REQ-1"], ["REQ-2"]],
+      };
+      const results = evaluateCriteria(artifact, [
+        {
+          name: "must-covered",
+          type: "coverage-min",
+          path: "unused",
+          source_path: "requirements",
+          source_filter_path: "priority",
+          source_filter_value: "must",
+          target_paths: ["test_links"],
+          value: 1,
+        },
+      ]);
+      expect(results[0].passed).toBe(true);
+    });
+
+    it("fails when coverage threshold is not met", () => {
+      const artifact = {
+        requirements: [
+          { trace_id: "REQ-1", priority: "must" },
+          { trace_id: "REQ-2", priority: "must" },
+        ],
+        tasks: [{ covers_requirement_ids: ["REQ-1"] }],
+      };
+      const results = evaluateCriteria(artifact, [
+        {
+          name: "must-covered",
+          type: "coverage-min",
+          path: "unused",
+          source_path: "requirements",
+          source_filter_path: "priority",
+          source_filter_value: "must",
+          target_paths: ["tasks"],
+          value: 1,
+        },
+      ]);
+      expect(results[0].passed).toBe(false);
+      expect(results[0].evidence).toContain("REQ-2");
+    });
+  });
+
   describe("regex-match", () => {
     it("passes when string matches pattern", () => {
       const results = evaluateCriteria(

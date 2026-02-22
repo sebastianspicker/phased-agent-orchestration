@@ -23,7 +23,9 @@ async function main() {
       });
     }
     const input = JSON.parse(raw) as Input;
-    const evaluated = await evaluateGate(input);
+    const evaluated = await evaluateGate(input, {
+      workspaceRoot: process.env.WORKSPACE_ROOT ?? "/workspace",
+    });
     logs = evaluated.logs;
 
     const result: RunResult = {

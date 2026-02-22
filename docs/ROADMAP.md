@@ -1,6 +1,15 @@
 # Gap Analysis & Roadmap (Feb 2026)
 
-## Phased Agent Orchestration — What’s Next to Match Current Research
+## Implementation Status (Feb 22, 2026)
+
+- [x] Gap A (P0): execution trace contract, runtime emission, and trace-collector validation/summaries are implemented.
+- [x] Gap B (P0): evaluation-report contract, matrix runner, schema-validated tasksets, and metric aggregation are implemented.
+- [x] Gap C (P1): context manifests and runtime budget gates (`count-max`, `number-max`) are implemented.
+- [x] Gap D (P1): deterministic orchestration policy is documented, configured, and enforced at runtime.
+- [x] Gap E (P1): end-to-end traceability linkage and MUST-coverage gates are implemented.
+- [x] Gap F (P2): drift taxonomy, goldset, and precision/recall/F1 benchmark thresholds are implemented.
+
+## Phased Agent Orchestration — Research Alignment and Closure Status
 
 > **Goal of this document:** derive concrete improvements / next steps for
 > `phased-agent-orchestration` from the repo’s own scientific framing _and_ from
@@ -16,7 +25,21 @@ This roadmap is designed to be **repo-native**:
 
 ---
 
-## 0) TL;DR — What’s already strong, and what’s missing
+## Status Note (Feb 22, 2026)
+
+All Gap A-F workstreams are implemented in repository code and active verification flows.
+The analysis sections below are intentionally retained as scientific rationale and historical framing.
+
+- Gap A: `contracts/artifacts/execution-trace.schema.json`, `scripts/pipeline/lib/trace.mjs`, `skills/dev-tools/trace-collector/`
+- Gap B: `contracts/artifacts/evaluation-report.schema.json`, `scripts/eval/run-matrix.mjs`, `scripts/eval/aggregate.mjs`, `scripts/eval/lib/taskset-validate.mjs`
+- Gap C: `contracts/artifacts/*context_manifest*`, `skills/dev-tools/quality-gate/src/lib/criteria.ts`, `scripts/pipeline/runner.mjs`
+- Gap D: `docs/ORCHESTRATION_POLICY.md`, `docs/pipeline/pipeline-state.template.json`, `scripts/pipeline/lib/policy.mjs`
+- Gap E: `contracts/artifacts/traceability-check.schema.json`, `scripts/pipeline/lib/traceability.mjs`, `scripts/pipeline/runner.mjs`
+- Gap F: `docs/eval/drift_goldset/`, `scripts/eval/drift-benchmark.mjs`
+
+---
+
+## 0) TL;DR — What’s already strong, and what was initially missing
 
 ### What the repo already does well (and why this is scientifically aligned)
 
@@ -32,7 +55,7 @@ This roadmap is designed to be **repo-native**:
   formalizes “design → plan → implementation” alignment and blocks
   self-certification.
 
-### What’s most missing to match _current_ state-of-the-art (2025–2026)
+### What was most missing in the initial analysis (now implemented)
 
 1. **Standardized execution traces + system signals** (latency, cost, failures,
    tool-use, phase transitions) to enable reliable evaluation and debugging at
@@ -126,12 +149,12 @@ standardized configuration/execution and exporting framework-agnostic traces and
 system-level signals (latency/cost/failures).
 
 **Implication for this repo:**  
-You’re already close conceptually (phase state + gates), but you’re missing the
-**trace layer** that makes the system empirically inspectable and comparable.
+The design was already close conceptually (phase state + gates), but it lacked
+a first-class **trace layer** to make behavior empirically inspectable and comparable.
 
 ---
 
-## 3) Gap analysis (repo vs. “current stand”)
+## 3) Gap analysis (repo vs. historical baseline)
 
 ### Gap A — Observability and trace standardization (P0)
 
@@ -140,7 +163,7 @@ You’re already close conceptually (phase state + gates), but you’re missing 
 - `pipeline-state.template.json` tracks phases and completed gates.
 - `quality-gate` reports execution time and logs for that tool execution.
 
-**What’s missing (state-of-the-art expectation):**
+**What was missing in the original baseline (state-of-the-art expectation):**
 
 - A **run-level execution trace** that spans the entire pipeline and includes:
   - phase transitions,
@@ -153,17 +176,17 @@ You’re already close conceptually (phase state + gates), but you’re missing 
 This aligns directly with MAESTRO’s emphasis on framework-agnostic traces and
 system-level signals.
 
-**Concrete next steps:**
+**Implemented repository changes (Feb 2026):**
 
-1. Add a new contract:
-   - `contracts/artifacts/execution-trace.schema.json` (or
-     `contracts/trace.schema.json`)
-2. Add a pipeline artifact:
-   - `.pipeline/runs/<run_id>/trace.jsonl` (append-only event stream)  
-     and optionally a condensed `trace.summary.json`.
-3. Add a runtime tool (offline, Node):
-   - `skills/dev-tools/trace-collector/`  
-     that validates trace events and produces summary metrics (see Gap B).
+1. Added the execution trace contract:
+   - `contracts/artifacts/execution-trace.schema.json`
+2. Added run-level trace artifacts:
+   - `.pipeline/runs/<run_id>/trace.jsonl` (append-only event stream)
+   - `.pipeline/runs/<run_id>/trace.summary.json` (collector summary)
+3. Added and integrated the runtime trace validator/summarizer:
+   - `skills/dev-tools/trace-collector/`
+   - `scripts/pipeline/lib/trace.mjs`
+   - `scripts/pipeline/runner.mjs`
 
 #### Recommended minimal trace event model (JSONL)
 
@@ -210,7 +233,7 @@ This preserves your runner-agnostic philosophy: tier is required; `model_hint`,
 - The scientific doc already suggests metrics: pass/fail rates, drift trends,
   dedup ratio, time-to-closure.
 
-**What’s missing:**
+**What was missing in the original baseline:**
 
 - A repeatable, comparable evaluation harness across runs and configurations:
 - baseline (single-agent, no phased gates),
@@ -222,15 +245,18 @@ This preserves your runner-agnostic philosophy: tier is required; `model_hint`,
 This is crucial given research warning that orchestration can be mis-costed and
 only helps under certain differentials.
 
-**Concrete next steps:**
+**Implemented repository changes (Feb 2026):**
 
-- Add a new artifact schema:
+- Added the evaluation report artifact contract:
   - `contracts/artifacts/evaluation-report.schema.json`
-- Add a script:
-  - `scripts/eval-run.sh` (or `scripts/eval/…`) that:
-  - runs the same task spec multiple times,
-  - aggregates metrics from gates + drift reports + quality reports + trace,
-  - outputs an evaluation report.
+- Added a taskset contract plus strict schema validation:
+  - `contracts/eval-taskset.schema.json`
+  - `scripts/eval/lib/taskset-validate.mjs`
+- Added matrix execution + aggregation flow:
+  - `scripts/eval/run-matrix.sh`
+  - `scripts/eval/run-matrix.mjs`
+  - `scripts/eval/aggregate.mjs`
+  - `.pipeline/evaluations/<eval_id>/evaluation-report.json`
 
 #### Minimal metrics set (scientifically defensible)
 
@@ -282,7 +308,7 @@ Why this matters (long-context + MAS research):
   noise -> increase $H(C)$ without increasing $I(I;C)$.
 - Your pipeline config already encodes cognitive tiers per phase.
 
-**What’s missing:**
+**What was missing in the original baseline:**
 
 - A measurable representation of “what context was used” per phase.
 - A gateable budget (token or approximate size).
@@ -291,17 +317,17 @@ This matters because “Lost in the Middle” shows long-context usage degrades
 depending on relevance position. The operational fix is not just “use less
 context,” but enforce curated context selection and ordering.
 
-**Concrete next steps:**
+**Implemented repository changes (Feb 2026):**
 
-- Add optional `context_manifest` to every artifact schema (or at least design,
-  plan, build outputs):
+- Added optional `context_manifest` to artifact schemas:
   - `files_loaded`: list of file paths + byte sizes
   - `docs_loaded`: list of URLs + `retrieved_at`
   - `selection_policy`: free text + parameters
   - `token_estimate` or `char_count_estimate`
-- Add quality-gate criteria type (new) like:
+- Added quality-gate criterion types:
   - `count-max` for list lengths (`files_loaded <= K`)
   - `number-max` for `token_estimate <= budget`
+- Added runtime budget enforcement in `scripts/pipeline/runner.mjs` with shadow/enforce behavior via `context_budget_v1`.
 
 (You currently support `field-exists`, `field-empty`, `count-min`,
 `regex-match`.)
@@ -328,7 +354,7 @@ optional—it is the mechanism that turns the theory into control.
   O(n²) to O(n)” rationale.
 - A cognitive tiering plan in pipeline config.
 
-**What’s missing:**
+**What was missing in the original baseline:**
 
 - A decision procedure to choose:
 - single-agent vs multi-agent,
@@ -339,14 +365,17 @@ This is especially important because the 2025 orchestration paper argues
 orchestration isn’t always beneficial; it depends on performance/cost
 differentials under realistic conditions.
 
-**Concrete next steps:**
+**Implemented repository changes (Feb 2026):**
 
-- Add `config.orchestration_policy` to pipeline-state template:
+- Added `config.orchestration_policy` to pipeline-state template:
   - `max_reviewers`, `max_builders`
   - `budget_usd` (optional), `latency_budget_s` (optional)
   - `min_expected_gain` threshold
-- Add a tiny “policy function” spec in docs:
+- Added a policy specification in docs:
   - `docs/ORCHESTRATION_POLICY.md`
+- Added runtime policy computation:
+  - `scripts/pipeline/lib/policy.mjs`
+  - Policy decisions emitted as `agent_call` trace events in `scripts/pipeline/runner.mjs`.
 
 A simple policy model (start here)
 
@@ -387,7 +416,7 @@ This ties your mathematical justification to a concrete control knob.
 - The plan schema exists and can list tests/verification.
 - Gates produce structured pass/fail outputs.
 
-**What’s missing:**
+**What was missing in the original baseline:**
 
 - A required linkage like:
 - tasks reference `requirement_ids`
@@ -400,14 +429,16 @@ Without this, you can’t compute:
 - “coverage of constraints by drift checks”
 - “which requirement caused a gate failure”
 
-**Concrete next steps:**
+**Implemented repository changes (Feb 2026):**
 
-- Update schema(s):
-  - add traceability fields:
+- Updated schemas with traceability fields:
   - `trace_id` on every requirement/constraint
   - `covers: ["REQ-1", "REQ-7"]` on tasks and tests
-- Add a gate:
-  - “all MUST requirements are covered by >=1 test”
+- Added traceability gate enforcement:
+  - plan phase: MUST coverage by plan tasks + plan tests
+  - build phase: MUST coverage by plan tasks + plan tests + drift claims
+  - design linkage: warning-only (non-blocking)
+  - implementation: `contracts/artifacts/traceability-check.schema.json`, `scripts/pipeline/lib/traceability.mjs`, `scripts/pipeline/runner.mjs`
 
 This directly strengthens the repo’s “judgment-centric” claim: it makes intent
 preservation auditable, not just stated.
@@ -427,7 +458,7 @@ preservation auditable, not just stated.
 - A dual-extractor mode where two independent claim sets are correlated via
   token similarity and adjudicated.
 
-**What’s missing:**
+**What was missing in the original baseline:**
 
 - Drift detection is only as good as claim extraction quality. Right now, claim
   extraction is implied (external agents produce claims), but you don’t have:
@@ -435,41 +466,42 @@ preservation auditable, not just stated.
 - an evaluation dataset,
 - measures of false positives / false negatives.
 
-**Concrete next steps:**
+**Implemented repository changes (Feb 2026):**
 
-- Standardize drift claim types:
+- Standardized drift claim types:
   - e.g., interface, invariant, security, performance, doc
-- Create a small gold set:
+- Added a versioned goldset:
   - `docs/eval/drift_goldset/` with known design/plan pairs and expected drift
     findings
-- Add an evaluation report:
-  - precision/recall for drift detection under different modes.
+- Added dual-mode benchmark and thresholds:
+  - `scripts/eval/drift-benchmark.mjs` computes precision/recall/F1 per class and mode (`heuristic`, `dual-extractor`)
+  - default thresholds: `precision >= 0.75`, `recall >= 0.65`, `f1 >= 0.70`
 
 This aligns with the general trend in long-context benchmarking (LongBench) and
 MAS evaluation (MAESTRO): you need systematic tests, not anecdotes.
 
 ---
 
-## 4) Prioritized roadmap
+## 4) Prioritized roadmap (historical baseline and closure)
 
 P0 — “To be state-of-the-art credible”
 
-- Add execution trace schema + trace event stream (`trace.jsonl`)
-- Add evaluation harness producing an `evaluation-report.json`
-- Add metrics aggregator (runs -> summary dashboards)
+- Completed: execution trace schema + trace event stream (`trace.jsonl`)
+- Completed: evaluation harness producing `evaluation-report.json`
+- Completed: metrics aggregation across matrix runs
 
 P1 — “Make the theory enforceable”
 
-- Add context manifests to artifacts + per-phase budgets
-- Add orchestration policy (when multi-agent is worth it)
-- Add end-to-end traceability (requirements -> tasks -> tests -> drift)
+- Completed: context manifests + per-phase budget gates
+- Completed: orchestration policy (runtime fanout decisions)
+- Completed: end-to-end traceability (requirements -> tasks -> tests -> drift)
 
 P2 — “Improve measurement and robustness”
 
-- Drift detection: standardized claim taxonomy + gold set + precision/recall
+- Completed: drift taxonomy + goldset + precision/recall/F1 benchmark
 - Review dedup: configurable similarity threshold + better tokenization
   (optional)
-- Add “regression tests” for gate criteria and schema evolution
+- Completed: regression coverage for gate criteria and schema evolution in runtime package tests
 
 ---
 

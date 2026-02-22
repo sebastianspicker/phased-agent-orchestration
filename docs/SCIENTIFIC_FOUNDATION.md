@@ -422,12 +422,12 @@ Examples:
 
 ### 4.2 Runtime Skills
 
-This repository includes two key runtime packages:
+This repository includes three key runtime packages:
 
 1. **quality-gate**
 
    - validates artifacts against a JSON schema + acceptance criteria
-   - criteria types include: field-exists, field-empty, count-min, regex-match
+   - criteria types include: `field-exists`, `field-empty`, `count-min`, `count-max`, `number-max`, `coverage-min`, `regex-match`
    - outputs a structured gate result with blocking failures
 
 2. **multi-model-review**
@@ -435,6 +435,11 @@ This repository includes two key runtime packages:
    - deduplicates via token overlap (Jaccard similarity)
    - produces cost/benefit analysis scaffolding
    - performs drift detection, including **dual-extractor adjudication**
+
+3. **trace-collector**
+   - validates run-level execution events against `execution-trace.schema.json`
+   - reports deterministic aggregate metrics (event counts, gate results, phase durations, retry/failure counters)
+   - emits run summaries used by evaluation workflows
 
 These runtime tools make “validation” _machine-checkable_ rather than “vibes-based.”
 
@@ -462,9 +467,9 @@ Phased orchestration is a structural answer:
 
 ---
 
-## 5. What to Integrate Next
+## 5. Further Integrations
 
-Based on the “judgment-centric” research direction, the repo can be extended in scientifically meaningful ways without betraying its core principle (minimal noise, maximal verification):
+Based on the “judgment-centric” research direction, the repo can be extended further in scientifically meaningful ways without betraying its core principle (minimal noise, maximal verification):
 
 1. **Progressive Disclosure & Explicit Context Budgets**
 

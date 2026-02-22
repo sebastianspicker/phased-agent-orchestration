@@ -1,7 +1,15 @@
 import type { Input } from "../types.js";
 import { isGatePhase } from "./phases.js";
 
-const CRITERION_TYPES = new Set(["field-exists", "field-empty", "count-min", "regex-match"]);
+const CRITERION_TYPES = new Set([
+  "field-exists",
+  "field-empty",
+  "count-min",
+  "count-max",
+  "number-max",
+  "coverage-min",
+  "regex-match",
+]);
 
 export function validateInput(input: Input): void {
   if (!input?.artifact || typeof input.artifact !== "object" || Array.isArray(input.artifact)) {
@@ -31,7 +39,7 @@ export function validateInput(input: Input): void {
     if (!CRITERION_TYPES.has(c.type)) {
       throw Object.assign(
         new Error(
-          "Each criterion type must be one of: field-exists, field-empty, count-min, regex-match",
+          "Each criterion type must be one of: field-exists, field-empty, count-min, count-max, number-max, coverage-min, regex-match",
         ),
         {
           code: "E_BAD_INPUT",
@@ -54,6 +62,63 @@ export function validateInput(input: Input): void {
             code: "E_BAD_INPUT",
           },
         );
+      }
+    }
+    if (c.type === "count-max") {
+      if (
+        typeof c.value !== "number" ||
+        !Number.isFinite(c.value) ||
+        !Number.isInteger(c.value) ||
+        c.value < 0
+      ) {
+        throw Object.assign(
+          new Error("count-max criterion requires a non-negative integer value"),
+          {
+            code: "E_BAD_INPUT",
+          },
+        );
+      }
+    }
+    if (c.type === "number-max") {
+      if (typeof c.value !== "number" || !Number.isFinite(c.value) || c.value < 0) {
+        throw Object.assign(
+          new Error("number-max criterion requires a non-negative number value"),
+          {
+            code: "E_BAD_INPUT",
+          },
+        );
+      }
+    }
+    if (c.type === "coverage-min") {
+      if (typeof c.value !== "number" || !Number.isFinite(c.value) || c.value < 0 || c.value > 1) {
+        throw Object.assign(new Error("coverage-min criterion requires a value between 0 and 1"), {
+          code: "E_BAD_INPUT",
+        });
+      }
+      if (!c.source_path || typeof c.source_path !== "string") {
+        throw Object.assign(new Error("coverage-min criterion requires source_path"), {
+          code: "E_BAD_INPUT",
+        });
+      }
+      if (!Array.isArray(c.target_paths) || c.target_paths.length === 0) {
+        throw Object.assign(new Error("coverage-min criterion requires non-empty target_paths"), {
+          code: "E_BAD_INPUT",
+        });
+      }
+      for (const targetPath of c.target_paths) {
+        if (typeof targetPath !== "string" || targetPath.length === 0) {
+          throw Object.assign(
+            new Error("coverage-min criterion target_paths must contain non-empty strings"),
+            {
+              code: "E_BAD_INPUT",
+            },
+          );
+        }
+      }
+      if (c.source_filter_path !== undefined && typeof c.source_filter_path !== "string") {
+        throw Object.assign(new Error("coverage-min source_filter_path must be a string"), {
+          code: "E_BAD_INPUT",
+        });
       }
     }
     if (c.type === "regex-match") {

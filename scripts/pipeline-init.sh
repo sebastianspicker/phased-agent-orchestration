@@ -13,8 +13,14 @@ run_dir="$pipeline_dir/runs/$run_id"
 mkdir -p "$run_dir/drift-reports"
 mkdir -p "$run_dir/quality-reports"
 mkdir -p "$run_dir/gates"
+mkdir -p "$run_dir/evaluations"
 
 timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+trace_path="$run_dir/trace.jsonl"
+
+printf '{"ts":"%s","run_id":"%s","event":"run_start","phase":"arm","status":"ok","metadata":{"source":"pipeline-init"}}\n' \
+  "$timestamp" \
+  "$run_id" > "$trace_path"
 
 cat > "$pipeline_dir/pipeline-state.json" <<EOF
 {
@@ -65,7 +71,31 @@ cat > "$pipeline_dir/pipeline-state.json" <<EOF
       "quality-backend",
       "quality-docs",
       "security-review"
-    ]
+    ],
+    "orchestration_policy": {
+      "max_reviewers": 3,
+      "max_builders": 3,
+      "latency_budget_s": 3600,
+      "budget_usd": 50,
+      "lambda": 1,
+      "mu": 1,
+      "min_expected_gain": 0.1
+    },
+    "context_budgets": {
+      "design": 24000,
+      "adversarial-review": 18000,
+      "plan": 16000,
+      "pmatch": 12000,
+      "build_lead": 10000,
+      "build_worker": 8000
+    },
+    "feature_flags": {
+      "trace_v1": false,
+      "evaluation_v1": false,
+      "context_budget_v1": false,
+      "traceability_v1": false,
+      "drift_benchmark_v1": false
+    }
   }
 }
 EOF
@@ -73,4 +103,5 @@ EOF
 echo "Pipeline initialized:"
 echo "  run_id:    $run_id"
 echo "  run_dir:   $run_dir"
+echo "  trace:     $trace_path"
 echo "  state:     $pipeline_dir/pipeline-state.json"

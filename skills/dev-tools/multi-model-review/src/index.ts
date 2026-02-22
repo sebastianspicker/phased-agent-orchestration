@@ -33,7 +33,9 @@ async function main() {
     if (input.action.type === "review") {
       data = runReview(input, logs);
     } else {
-      data = runDriftDetect(input, logs);
+      data = runDriftDetect(input, logs, {
+        workspaceRoot: process.env.WORKSPACE_ROOT ?? "/workspace",
+      });
     }
 
     const result: RunResult = {

@@ -19,6 +19,7 @@ import { detectDrift, detectDriftFromExtractorClaims } from "./drift.js";
 
 const REVIEW_SEVERITIES = new Set(["critical", "high", "medium", "low", "info"]);
 const DRIFT_VERIFICATION_STATUSES = new Set(["verified", "violated", "partial", "unverifiable"]);
+const DRIFT_CLAIM_TYPES = new Set(["interface", "invariant", "security", "performance", "docs"]);
 
 function badInput(message: string): Error {
   return Object.assign(new Error(message), { code: "E_BAD_INPUT" });
@@ -68,7 +69,7 @@ function validateExtractorClaimSets(claimSets: unknown): void {
       }
       assertNoUnexpectedProperties(
         claim,
-        ["id", "claim", "verification_status", "evidence", "confidence"],
+        ["id", "claim", "claim_type", "verification_status", "evidence", "confidence"],
         "extractor claim",
       );
       if (typeof claim.id !== "string" || claim.id.length === 0) {
@@ -83,6 +84,14 @@ function validateExtractorClaimSets(claimSets: unknown): void {
       ) {
         throw badInput(
           "Each extractor claim verification_status must be one of: verified, violated, partial, unverifiable",
+        );
+      }
+      if (
+        claim.claim_type !== undefined &&
+        (typeof claim.claim_type !== "string" || !DRIFT_CLAIM_TYPES.has(claim.claim_type))
+      ) {
+        throw badInput(
+          "Each extractor claim claim_type must be one of: interface, invariant, security, performance, docs",
         );
       }
       if (typeof claim.evidence !== "string" || claim.evidence.length === 0) {

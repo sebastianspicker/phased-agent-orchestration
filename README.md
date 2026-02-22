@@ -85,7 +85,7 @@ Canonical phase aliases:
 ## End-to-End Flow
 
 ```mermaid
-flowchart TD
+flowchart TB
   A["Idea input"] --> B["Intake (arm): brief formation"]
   B --> C{"Intake gate pass?"}
   C -- "No" --> B
@@ -157,19 +157,21 @@ The current implementation strengthens existing behavior without reintroducing e
 6. Design evidence is enforced at schema level:
 - `research[].verified_at` is required.
 
-7. Repo verify now enforces lint + format-check + build + tests for both runtime skill packages.
+7. Repo verify now enforces lint + format-check + build + tests for all runtime skill packages.
 8. New top-level phases `quality-static`, `quality-tests`, and `release-readiness` are integrated into the canonical stage order.
+9. Execution traces are standardized via `contracts/artifacts/execution-trace.schema.json` and validated/summarized by `trace-collector`.
+10. Evaluation reports are standardized via `contracts/artifacts/evaluation-report.schema.json` and generated from matrix runs under `.pipeline/evaluations/`.
 
 ## Runtime Architecture
 
 ```mermaid
-flowchart LR
-  subgraph INIT["Run bootstrap"]
+flowchart TB
+  subgraph INIT["Run Bootstrap"]
     A["scripts/pipeline-init.sh"] --> B[".pipeline/pipeline-state.json"]
     A --> C[".pipeline/runs/<run-id>/*"]
   end
 
-  subgraph ADAPTERS["Stage adapters"]
+  subgraph ADAPTERS["Stage Adapters"]
     D["orchestration-arm"]
     E["orchestration-design"]
     F["orchestration-ar"]
@@ -183,9 +185,10 @@ flowchart LR
     N["orchestration-pipeline"]
   end
 
-  subgraph RUNTIME["Runtime skills"]
+  subgraph RUNTIME["Runtime Skills"]
     O["quality-gate"]
     P["multi-model-review"]
+    T["trace-collector"]
   end
 
   subgraph CONTRACTS["Contracts"]
@@ -210,6 +213,7 @@ flowchart LR
   O --> Q
   O --> R
   P --> Q
+  T --> Q
 
   N --> D
   N --> E
@@ -235,6 +239,13 @@ flowchart LR
   - `adjudication` is required.
   - `claims[].extractor` is required.
   - `claims[].confidence` is optional (0..1).
+  - `claims[].claim_type` supports taxonomy classes (`interface`, `invariant`, `security`, `performance`, `docs`).
+
+- `contracts/artifacts/execution-trace.schema.json`
+  - standard event contract for `.pipeline/runs/<run-id>/trace.jsonl`.
+
+- `contracts/artifacts/evaluation-report.schema.json`
+  - standard report contract for matrix-based run evaluation.
 
 - `skills/dev-tools/multi-model-review/schemas/input.schema.json`
   - `drift_config.mode` supports `heuristic` and `dual-extractor`.
@@ -245,6 +256,8 @@ flowchart LR
 
 - `contracts/artifacts/release-readiness.schema.json`
   - release decision and ship-readiness evidence are required before closure.
+
+- all main artifacts now accept optional `context_manifest` blocks for budgeted, auditable context usage.
 
 ## Verification Model
 
@@ -269,7 +282,9 @@ contracts/artifacts/                  artifact schemas
 contracts/quality-gate.schema.json    gate result schema
 skills/dev-tools/quality-gate/        schema + criteria gate runtime
 skills/dev-tools/multi-model-review/  review merge, cost/risk, drift adjudication runtime
+skills/dev-tools/trace-collector/     trace validation + summary runtime
 scripts/pipeline-init.sh              run bootstrap
+scripts/eval/                         evaluation matrix + aggregation
 scripts/check-orchestration-integrity.sh
 scripts/verify.sh                     repo verification entrypoint
 docs/pipeline/                        pipeline state template

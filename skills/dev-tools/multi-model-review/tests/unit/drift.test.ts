@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { detectDrift, detectDriftFromExtractorClaims } from "../../src/lib/drift.js";
+import {
+  detectDrift,
+  detectDriftFromExtractorClaims,
+  evaluateDriftQuality,
+} from "../../src/lib/drift.js";
 
 describe("detectDrift", () => {
   it("returns no findings when target contains all source claims", () => {
@@ -159,6 +163,9 @@ describe("detectDrift", () => {
     for (const claim of claims) {
       expect(claim.claim.length).toBeGreaterThan(0);
       expect(claim.extractor).toBe("rule-based-drift-detector");
+      expect(["interface", "invariant", "security", "performance", "docs"]).toContain(
+        claim.claim_type,
+      );
     }
   });
 
@@ -230,5 +237,17 @@ describe("detectDriftFromExtractorClaims", () => {
     expect(result.claims).toHaveLength(1);
     expect(result.claims[0]?.verification_status).toBe("unverifiable");
     expect(result.findings).toHaveLength(1);
+  });
+
+  it("computes precision/recall/f1 metrics by taxonomy class", () => {
+    const metrics = evaluateDriftQuality(
+      ["security", "performance", "docs"],
+      ["security", "docs", "docs"],
+    );
+
+    expect(metrics.overall.precision).toBeGreaterThan(0);
+    expect(metrics.overall.recall).toBeGreaterThan(0);
+    expect(metrics.by_class.security.precision).toBe(1);
+    expect(metrics.by_class.performance.recall).toBe(0);
   });
 });

@@ -7,7 +7,7 @@ python3 "$root_dir/scripts/codex/validate_skills.py"
 "$root_dir/scripts/check-no-stale-refs.sh"
 "$root_dir/scripts/check-orchestration-integrity.sh"
 
-for pkg in "skills/dev-tools/quality-gate" "skills/dev-tools/multi-model-review"; do
+for pkg in "skills/dev-tools/quality-gate" "skills/dev-tools/multi-model-review" "skills/dev-tools/trace-collector"; do
   echo "==> verify $pkg"
   (
     cd "$root_dir/$pkg"
@@ -18,3 +18,8 @@ for pkg in "skills/dev-tools/quality-gate" "skills/dev-tools/multi-model-review"
     npm test
   )
 done
+
+if [[ "${DRIFT_BENCHMARK:-0}" == "1" ]]; then
+  echo "==> drift benchmark"
+  node "$root_dir/scripts/eval/drift-benchmark.mjs" --root "$root_dir"
+fi
