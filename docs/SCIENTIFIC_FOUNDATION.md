@@ -62,46 +62,46 @@ This is not just “process hygiene” — it is a rational architecture under i
 
 Let:
 
-- \(I\) be the (latent) **human intent** (requirements, constraints, goals).
-- \(C\) be the **context** provided to an agent (prompt + repo info + docs + intermediate artifacts).
-- \(Y\) be the produced output (plan/design/code).
+- $I$ be the (latent) **human intent** (requirements, constraints, goals).
+- $C$ be the **context** provided to an agent (prompt + repo info + docs + intermediate artifacts).
+- $Y$ be the produced output (plan/design/code).
 
 We want high alignment between intent and output. One lens is the **mutual information** between intent and what the agent _effectively_ uses:
 
-\[
+$$
 I(I;C) \quad \text{(how much information about intent is contained in context)}
-\]
+$$
 
 Now split context into **signal** and **noise**:
 
-- \(S\): intent-relevant information (constraints, spec, ground truth)
-- \(N\): irrelevant or weakly relevant information (stale prompts, parallel patterns, old discussions)
+- $S$: intent-relevant information (constraints, spec, ground truth)
+- $N$: irrelevant or weakly relevant information (stale prompts, parallel patterns, old discussions)
 
 So:
 
-\[
+$$
 C = (S, N)
-\]
+$$
 
-If \(N\) is approximately independent of intent given \(S\) (typical for “extra fluff”), then:
+If $N$ is approximately independent of intent given $S$ (typical for “extra fluff”), then:
 
-\[
+$$
 I(I;C) = I(I;S,N) = I(I;S) + I(I;N \mid S) \approx I(I;S)
-\]
+$$
 
 Meaning: **adding noise increases tokens but not intent information**.
 
 A useful normalized measure is:
 
-\[
+$$
 \mathrm{SNR}_{\text{info}}(I \rightarrow C) \;=\; \frac{I(I;C)}{H(C)}
-\]
+$$
 
-Since \(H(C)\) (entropy / description length) increases with noise, while \(I(I;C)\) barely increases, the normalized signal-to-noise ratio drops:
+Since $H(C)$ (entropy / description length) increases with noise, while $I(I;C)$ barely increases, the normalized signal-to-noise ratio drops:
 
-\[
+$$
 \mathrm{SNR}_{\text{info}} \downarrow \quad \text{as noise tokens grow}
-\]
+$$
 
 **Interpretation:** Larger context windows can create _worse reasoning_ because they can **dilute** relevant information with irrelevant material.
 
@@ -109,15 +109,15 @@ Since \(H(C)\) (entropy / description length) increases with noise, while \(I(I;
 
 Transformer attention assigns weights:
 
-\[
+$$
 a_i = \frac{\exp(q \cdot k_i)}{\sum_{j=1}^{L}\exp(q \cdot k_j)}
-\]
+$$
 
-Adding \(K\) additional irrelevant tokens increases the denominator. Under mild assumptions (irrelevant keys are not always trivially separable), the expected total mass allocated to true signal tokens decreases roughly with:
+Adding $K$ additional irrelevant tokens increases the denominator. Under mild assumptions (irrelevant keys are not always trivially separable), the expected total mass allocated to true signal tokens decreases roughly with:
 
-\[
+$$
 \mathbb{E}\left[\sum_{i \in S} a_i\right] \approx \frac{|S|}{|S|+K}
-\]
+$$
 
 So even if the model _could_ pay attention to everything, real attention is **competitive**. More tokens means more competition.
 
@@ -127,13 +127,13 @@ So even if the model _could_ pay attention to everything, real attention is **co
 
 Even ignoring reasoning degradation, long context has computational implications.
 
-For standard self-attention, compute/memory scales ~quadratically with sequence length \(L\):
+For standard self-attention, compute/memory scales ~quadratically with sequence length $L$:
 
-\[
+$$
 \text{Cost} \in \Theta(L^2)
-\]
+$$
 
-So increasing context length by factor \(r\) can increase attention cost by ~\(r^2\).
+So increasing context length by factor $r$ can increase attention cost by ~$r^2$.
 
 **Implication:** Practical systems must optimize not just “what’s true” but “what’s worth loading.”
 
@@ -145,15 +145,15 @@ Multi-agent systems introduce an overhead: every additional agent increases the 
 
 A classic model (Brooks-style) is the number of pairwise communication channels in a fully connected team:
 
-\[
+$$
 E_{\text{complete}}(n) = \frac{n(n-1)}{2}
-\]
+$$
 
-If coordination cost per channel is \(\alpha\), then:
+If coordination cost per channel is $\alpha$, then:
 
-\[
+$$
 C_{\text{coord}}(n) \approx \alpha \cdot \frac{n(n-1)}{2} \in \Theta(n^2)
-\]
+$$
 
 **That is the “too many cooks” problem in math form.**
 
@@ -161,9 +161,9 @@ C_{\text{coord}}(n) \approx \alpha \cdot \frac{n(n-1)}{2} \in \Theta(n^2)
 
 If you shift from group chat to a **hub-and-spoke** structure (one orchestrator + workers), edges become:
 
-\[
+$$
 E_{\text{star}}(n) = n-1 \in \Theta(n)
-\]
+$$
 
 So the architecture (communication topology) changes the scaling law.
 
@@ -179,30 +179,30 @@ So the architecture (communication topology) changes the scaling law.
 
 Let:
 
-- \(D\) be the **design artifact** (source of truth for architecture/constraints),
-- \(P\) be the **plan** (execution blueprint),
-- \(X\) be the **implementation** (code).
+- $D$ be the **design artifact** (source of truth for architecture/constraints),
+- $P$ be the **plan** (execution blueprint),
+- $X$ be the **implementation** (code).
 
 A common failure is:
 
-\[
+$$
 D \not\Rightarrow P \quad \text{and/or} \quad P \not\Rightarrow X
-\]
+$$
 
 Because humans and agents are fallible, and because each transformation is lossy.
 
-Drift can be formalized as a divergence between required constraints and realized constraints. If we define a set of constraints \( \mathcal{C}(D) \) extracted from design, then a drift score can be:
+Drift can be formalized as a divergence between required constraints and realized constraints. If we define a set of constraints $ \mathcal{C}(D) $ extracted from design, then a drift score can be:
 
-\[
+$$
 \mathrm{Drift}(D, X) \;=\; \frac{\sum_{c \in \mathcal{C}(D)} w_c \cdot \mathbf{1}[\neg c(X)]}{\sum_{c \in \mathcal{C}(D)} w_c}
-\]
+$$
 
 Where:
 
-- \(c(X)\) is a predicate “implementation satisfies constraint \(c\)”
-- \(w_c\) weights severity/importance.
+- $c(X)$ is a predicate “implementation satisfies constraint $c$”
+- $w_c$ weights severity/importance.
 
-**Self-certification** is the anti-pattern where the same agent that created \(X\) also declares \(X\) correct without independent validation, causing correlated blind spots.
+**Self-certification** is the anti-pattern where the same agent that created $X$ also declares $X$ correct without independent validation, causing correlated blind spots.
 
 ---
 
@@ -226,20 +226,20 @@ Phased orchestration is designed to preserve judgment:
 
 ### 2.2 Contracts and Gates
 
-Each phase emits an artifact \(A_k\). A gate \(G_k\) decides whether it is valid.
+Each phase emits an artifact $A_k$. A gate $G_k$ decides whether it is valid.
 
-\[
+$$
 A_k = f_k(A_{k-1}, \text{scoped context})
-\]
-\[
+$$
+$$
 G_k(A_k) \in \{\text{pass}, \text{fail}\}
-\]
+$$
 
 Pipeline progression:
 
-\[
+$$
 \text{advance} \iff G_k(A_k) = \text{pass}
-\]
+$$
 
 This is a **design-by-contract** view:
 
@@ -257,11 +257,11 @@ A core claim of the repo is:
 
 This implements **context min-maxing**:
 
-- maximize relevance \(S\),
-- minimize noise \(N\),
+- maximize relevance $S$,
+- minimize noise $N$,
 - avoid accumulating irrelevant prior discussion.
 
-In information terms: aim to maximize \(I(I;C)\) subject to a budget on \(H(C)\).
+In information terms: aim to maximize $I(I;C)$ subject to a budget on $H(C)$.
 
 ---
 
@@ -280,13 +280,13 @@ This matches the idea of minimizing **expensive reasoning cycles** while maximiz
 
 Instead of “one agent tries to be correct,” you want **independent perspectives**.
 
-If a failure is detected with probability \(r\) by one reviewer, then with \(m\) independent reviewers:
+If a failure is detected with probability $r$ by one reviewer, then with $m$ independent reviewers:
 
-\[
+$$
 P(\text{caught}) = 1 - (1-r)^m
-\]
+$$
 
-Even with moderate \(r\), parallel review improves recall.
+Even with moderate $r$, parallel review improves recall.
 
 But independence matters: if reviewers share the same context soup, their errors correlate.
 
@@ -298,19 +298,19 @@ So the repo’s emphasis on **isolated reviewer contexts** is mathematically coh
 
 Drift match is implemented as a claim-verification problem:
 
-1. Extract claims \(\mathcal{C}\) from source artifact (design/plan).
+1. Extract claims $\mathcal{C}$ from source artifact (design/plan).
 2. Verify each claim against target artifact (plan/implementation).
 3. Produce a structured drift report.
 
 #### Dual-Extractor Coverage Gain
 
-If each extractor covers a true claim with probability \(r\), using two independent extractors yields:
+If each extractor covers a true claim with probability $r$, using two independent extractors yields:
 
-\[
+$$
 P(\text{covered}) = 1 - (1-r)^2 = 2r - r^2
-\]
+$$
 
-Example: \(r=0.7 \Rightarrow P(\text{covered}) = 0.91\)
+Example: $r=0.7 \Rightarrow P(\text{covered}) = 0.91$
 
 This justifies the repo’s default **dual-extractor adjudication** for pmatch.
 
@@ -318,11 +318,11 @@ This justifies the repo’s default **dual-extractor adjudication** for pmatch.
 
 To reduce repeated findings across reviewers, the repo uses token-overlap similarity:
 
-\[
+$$
 J(A,B) = \frac{|A \cap B|}{|A \cup B|}
-\]
+$$
 
-If \(J(A,B) \ge \tau\), findings are treated as duplicates (merged), increasing signal-to-noise in review artifacts.
+If $J(A,B) \ge \tau$, findings are treated as duplicates (merged), increasing signal-to-noise in review artifacts.
 
 ---
 
@@ -332,15 +332,15 @@ If \(J(A,B) \ge \tau\), findings are treated as duplicates (merged), increasing 
 
 Let phases be states:
 
-\[
+$$
 \mathcal{S} = \{\text{arm}, \text{design}, \text{adversarial-review}, \text{plan}, \text{pmatch}, \text{build}, \text{quality-static}, \text{quality-tests}, \text{post-build}, \text{release-readiness}\}
-\]
+$$
 
 Transitions are conditional on gates:
 
-\[
+$$
 s_{k+1} = T(s_k, A_k) \quad \text{only if} \quad G_k(A_k)=\text{pass}
-\]
+$$
 
 This is a deterministic control structure around non-deterministic generators (LLMs).
 
@@ -348,23 +348,23 @@ This is a deterministic control structure around non-deterministic generators (L
 
 ### 3.2 Reliability Gains from Gates
 
-Suppose phase \(k\) has probability \(p_k\) of introducing a defect into its artifact without a gate.
+Suppose phase $k$ has probability $p_k$ of introducing a defect into its artifact without a gate.
 
-Let the gate detect such a defect with probability \(d_k\) (detection power).
+Let the gate detect such a defect with probability $d_k$ (detection power).
 
 Then residual defect probability for that phase becomes:
 
-\[
+$$
 p_k^{\text{res}} = p_k(1-d_k)
-\]
+$$
 
 If defects are approximately independent across phases (a simplifying assumption), the probability that the final output contains at least one defect is:
 
-\[
+$$
 P_{\text{defect}} = 1 - \prod_{k=1}^{K} (1 - p_k^{\text{res}})
-\]
+$$
 
-Adding gates increases \(d_k\), reducing \(p_k^{\text{res}}\), and reducing total defect risk.
+Adding gates increases $d_k$, reducing $p_k^{\text{res}}$, and reducing total defect risk.
 
 **Key: gating is a reliability multiplier.**
 
@@ -372,27 +372,27 @@ Adding gates increases \(d_k\), reducing \(p_k^{\text{res}}\), and reducing tota
 
 ### 3.3 Optimal Team Size Under Coordination Cost
 
-Let each agent add benefit \(b\), and coordination cost be quadratic:
+Let each agent add benefit $b$, and coordination cost be quadratic:
 
-\[
+$$
 S(n) = nb - \alpha \cdot \frac{n(n-1)}{2}
-\]
+$$
 
-Maximize \(S(n)\). Approximate in continuous \(n\):
+Maximize $S(n)$. Approximate in continuous $n$:
 
-\[
+$$
 \frac{dS}{dn} = b - \alpha\left(n-\frac{1}{2}\right)
-\]
+$$
 
 Setting to zero:
 
-\[
+$$
 n^{*} \approx \frac{b}{\alpha} + \frac{1}{2}
-\]
+$$
 
 So if coordination costs rise, optimal team size shrinks.
 
-The repo reduces \(\alpha\) by:
+The repo reduces $\alpha$ by:
 
 - scoping tasks (file ownership),
 - star-like orchestration (lead + workers),
@@ -448,8 +448,8 @@ The old pattern (many parallel prompts, patterns, collaboration styles) is effec
 
 Scientifically:
 
-- it increases \(H(C)\) (context entropy) faster than it increases \(I(I;C)\),
-- it increases coordination cost roughly with \(\Theta(n^2)\) in unstructured discussion,
+- it increases $H(C)$ (context entropy) faster than it increases $I(I;C)$,
+- it increases coordination cost roughly with $\Theta(n^2)$ in unstructured discussion,
 - it increases correlated error due to shared context soup,
 - it blurs maker/checker roles, enabling self-certification.
 
@@ -493,14 +493,14 @@ Based on the “judgment-centric” research direction, the repo can be extended
 
 5. **Formal “Coordination Topology” Documentation**
    - Add a short spec: when to use hub-and-spoke vs bounded group chat
-   - Include the explicit scaling law rationale (why \(O(n)\) beats \(O(n^2)\))
+   - Include the explicit scaling law rationale (why $O(n)$ beats $O(n^2)$)
 
 ---
 
 ## Glossary
 
 - **Signal-to-noise ratio (context)**: how much intent-relevant information exists relative to total context entropy.
-- **Coordination tax**: superlinear overhead as agent count grows, often modeled as \(O(n^2)\).
+- **Coordination tax**: superlinear overhead as agent count grows, often modeled as $O(n^2)$.
 - **Drift**: divergence between source-of-truth artifacts (design/plan) and downstream artifacts (plan/implementation).
 - **Gate**: a validation step (schema + criteria) that blocks progression on failure.
 - **Design-by-contract**: engineering approach where software components have explicit, enforceable pre/postconditions.
@@ -520,7 +520,7 @@ Based on the “judgment-centric” research direction, the repo can be extended
 - Design by Contract (Bertrand Meyer, chapter PDF)  
   <https://se.inf.ethz.ch/~meyer/publications/old/dbc_chapter.pdf>
 
-- The Mythical Man-Month / Brooks’s Law (communication channels \(n(n-1)/2\))  
+- The Mythical Man-Month / Brooks’s Law (communication channels $n(n-1)/2$)  
   <https://en.wikipedia.org/wiki/The_Mythical_Man-Month>
 
 - Towards a Science of Scaling Agent Systems (Kim et al., 2026)  

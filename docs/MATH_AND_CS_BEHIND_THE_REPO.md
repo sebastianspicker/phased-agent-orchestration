@@ -28,58 +28,58 @@ As LLM context windows grow and multi-agent workflows become common, two coupled
 
 ### 1.1 Intent-to-Output as a Noisy Channel
 
-Model a task as latent _intent_ \(I\) (requirements, constraints, goals) that must be preserved through an agent’s _context_ \(C\) into an _output_ \(Y\) (design/plan/code).
+Model a task as latent _intent_ $I$ (requirements, constraints, goals) that must be preserved through an agent’s _context_ $C$ into an _output_ $Y$ (design/plan/code).
 
 A minimal information-theoretic lens:
 
 - **Entropy**:
-  \[
+  $$
   H(X) = -\sum_{x} p(x)\log p(x)
-  \]
+  $$
 
 - **Mutual information**:
-  \[
+  $$
   I(I;C) = H(I) - H(I \mid C)
-  \]
-  \[
+  $$
+  $$
   I(C;Y) = H(Y) - H(Y \mid C)
-  \]
+  $$
 
 A central quantity for prompt engineering is not “how much context we have,” but **how much intent-relevant information per token** the context contains.
 
 Define a coarse “information density” metric:
 
-\[
+$$
 \eta(C) \;=\; \frac{I(I;C)}{|C|}
-\]
+$$
 
-Where \(|C|\) is context length in tokens (or bits). If we append irrelevant material \(N\) to the context, \(C'=(C,N)\), then typically:
+Where $|C|$ is context length in tokens (or bits). If we append irrelevant material $N$ to the context, $C'=(C,N)$, then typically:
 
-\[
+$$
 I(I;C') = I(I;C,N) = I(I;C) + I(I;N\mid C)
-\]
+$$
 
-If the extra text \(N\) is largely independent of intent given \(C\), then \(I(I;N\mid C)\approx 0\). But \(|C'| > |C|\). Therefore:
+If the extra text $N$ is largely independent of intent given $C$, then $I(I;N\mid C)\approx 0$. But $|C'| > |C|$. Therefore:
 
-\[
+$$
 \eta(C') \approx \frac{I(I;C)}{|C|+|N|} < \frac{I(I;C)}{|C|} = \eta(C)
-\]
+$$
 
 **Conclusion:** adding noise almost always lowers information density, even if it raises the total token budget.
 
-This repo’s design choice (“scoped context per phase”) is equivalent to maximizing \(\eta(C)\) by construction: each phase sees only the minimal artifact subset required for its function.
+This repo’s design choice (“scoped context per phase”) is equivalent to maximizing $\eta(C)$ by construction: each phase sees only the minimal artifact subset required for its function.
 
 ---
 
 ### 1.2 Attention Dilution (Mechanistic Interpretation)
 
-For a Transformer, attention weights for a query \(q\) and key \(k_i\) are:
+For a Transformer, attention weights for a query $q$ and key $k_i$ are:
 
-\[
+$$
 a_i = \frac{\exp(q^\top k_i)}{\sum_{j=1}^{L}\exp(q^\top k_j)}
-\]
+$$
 
-When you add \(K\) extra tokens, the denominator increases. Even if the model _can_ learn to suppress noise, real systems empirically show sensitivity to where relevant information appears in long contexts (“position effects”).
+When you add $K$ extra tokens, the denominator increases. Even if the model _can_ learn to suppress noise, real systems empirically show sensitivity to where relevant information appears in long contexts (“position effects”).
 
 A widely cited empirical result is that **performance often peaks when relevant information is near the beginning or end** of the context and degrades when it is in the middle of long contexts (“lost in the middle”). See [Liu2024] for controlled evidence.
 
@@ -109,15 +109,15 @@ These results motivate an architectural stance: **don’t assume bigger contexts
 
 Scaled dot-product attention is:
 
-\[
+$$
 \mathrm{Attention}(Q,K,V)=\mathrm{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
-\]
+$$
 
-For sequence length \(L\), the matrix \(QK^\top\) is \(L\times L\), so standard attention compute/memory scales approximately as:
+For sequence length $L$, the matrix $QK^\top$ is $L\times L$, so standard attention compute/memory scales approximately as:
 
-\[
+$$
 \text{Time} \in \Theta(L^2 d), \qquad \text{Memory} \in \Theta(L^2)
-\]
+$$
 
 This quadratic scaling is a major driver for “efficient transformer” variants and IO-aware implementations.
 
@@ -129,7 +129,7 @@ See:
 
 ### 2.2 Architectural Consequence
 
-Because attention is expensive and long contexts are behaviorally fragile, an optimal engineering strategy is not “maximize \(L\)” but to **optimize relevance per token** and to use **external structure** (phases, artifacts, gates) to stabilize behavior.
+Because attention is expensive and long contexts are behaviorally fragile, an optimal engineering strategy is not “maximize $L$” but to **optimize relevance per token** and to use **external structure** (phases, artifacts, gates) to stabilize behavior.
 
 This is exactly what the repository implements: artifact handoffs and gates replace “throw everything into one prompt” as the scaling mechanism.
 
@@ -139,39 +139,39 @@ This is exactly what the repository implements: artifact handoffs and gates repl
 
 ### 3.1 Communication Channels Scale as a Graph
 
-Model agent collaboration as a graph \(G=(V,E)\) where vertices are agents and edges are communication dependencies.
+Model agent collaboration as a graph $G=(V,E)$ where vertices are agents and edges are communication dependencies.
 
-- In a fully connected team of \(n\) agents:
-  \[
+- In a fully connected team of $n$ agents:
+  $$
   |E_{\text{complete}}| = \binom{n}{2} = \frac{n(n-1)}{2}
-  \]
+  $$
   This is the classic “channels of communication” model often discussed in software engineering coordination arguments (popularly associated with Brooks’ observations) [Brooks1975].
 
-- In a hub-and-spoke topology (one orchestrator + \(n-1\) workers):
-  \[
+- In a hub-and-spoke topology (one orchestrator + $n-1$ workers):
+  $$
   |E_{\text{star}}| = n-1
-  \]
+  $$
 
-So topology changes coordination complexity from \(\Theta(n^2)\) to \(\Theta(n)\).
+So topology changes coordination complexity from $\Theta(n^2)$ to $\Theta(n)$.
 
 ### 3.2 A Simple Throughput Model
 
-Let each agent contribute average benefit \(b\), and coordination overhead per channel be \(\alpha\). One stylized model:
+Let each agent contribute average benefit $b$, and coordination overhead per channel be $\alpha$. One stylized model:
 
-\[
+$$
 S(n)=nb-\alpha\cdot \frac{n(n-1)}{2}
-\]
+$$
 
-Maximizing w.r.t \(n\) (continuous approximation):
-\[
+Maximizing w.r.t $n$ (continuous approximation):
+$$
 \frac{dS}{dn}=b-\alpha\left(n-\frac12\right)=0
 \Rightarrow n^{*} \approx \frac{b}{\alpha}+\frac12
-\]
+$$
 
 Interpretation:
 
-- if tasks are highly parallel and cheap to coordinate (small \(\alpha\)), more agents help.
-- if tasks are tightly coupled or tool-heavy (large \(\alpha\)), more agents can reduce performance.
+- if tasks are highly parallel and cheap to coordinate (small $\alpha$), more agents help.
+- if tasks are tightly coupled or tool-heavy (large $\alpha$), more agents can reduce performance.
 
 A recent large controlled study on agent-system scaling explicitly reports **topology-dependent effects**, coordination overhead, and cases where multi-agent variants degrade performance (especially on sequential reasoning tasks) [Kim2025; KimBlog2025].
 
@@ -192,23 +192,23 @@ DbC’s rationale in software engineering is canonical (Meyer) [Meyer1992; Meyer
 ### 4.2 Phases as a Finite-State Machine With Hard Guards
 
 Let phases be states:
-\[
+$$
 \mathcal{S}=\{\texttt{arm},\texttt{design},\texttt{adversarial-review},\texttt{plan},\texttt{pmatch},\ldots\}
-\]
+$$
 
-Each phase emits an artifact \(A_k\). A gate \(G_k\) validates it:
+Each phase emits an artifact $A_k$. A gate $G_k$ validates it:
 
-\[
+$$
 A_k = f_k(A_{k-1}, C_k)
-\]
-\[
+$$
+$$
 G_k(A_k)\in\{\text{pass},\text{fail},\text{warn}\}
-\]
+$$
 
 Transition rule:
-\[
+$$
 \text{advance from phase }k \iff G_k(A_k)=\text{pass}
-\]
+$$
 
 This repo implements this _literally_ using JSON schemas and gate artifacts:
 
@@ -223,32 +223,32 @@ This provides a mechanical equivalent of DbC assertions: the artifact is the pos
 
 ### 5.1 Residual Defect Probability Per Phase
 
-Suppose phase \(k\) introduces a defect with probability \(p_k\).
-Suppose its gate detects defects with probability \(d_k\).
+Suppose phase $k$ introduces a defect with probability $p_k$.
+Suppose its gate detects defects with probability $d_k$.
 
 Then residual defect probability after gating:
-\[
+$$
 p_k^{\text{res}} = p_k(1-d_k)
-\]
+$$
 
-If phases are approximately independent, probability of at least one defect surviving across \(K\) phases:
+If phases are approximately independent, probability of at least one defect surviving across $K$ phases:
 
-\[
+$$
 P(\text{defect}) = 1-\prod_{k=1}^{K}\left(1-p_k^{\text{res}}\right)
-\]
+$$
 
-Even modest \(d_k\) (detection power) can drastically reduce risk because gating composes multiplicatively across phases.
+Even modest $d_k$ (detection power) can drastically reduce risk because gating composes multiplicatively across phases.
 
 ### 5.2 “Fail Fast” Minimizes Expected Rework Cost
 
-Let the cost to fix a defect discovered after phase \(k\) be \(c_k\), typically increasing with time (later discovery is more expensive).
+Let the cost to fix a defect discovered after phase $k$ be $c_k$, typically increasing with time (later discovery is more expensive).
 
 Expected rework cost:
-\[
+$$
 \mathbb{E}[C] = \sum_{k=1}^{K} c_k \cdot P(\text{defect discovered at phase }k)
-\]
+$$
 
-Architectures that move checks earlier reduce \(\mathbb{E}[C]\). This is the core economic argument for gates.
+Architectures that move checks earlier reduce $\mathbb{E}[C]$. This is the core economic argument for gates.
 
 ---
 
@@ -256,21 +256,21 @@ Architectures that move checks earlier reduce \(\mathbb{E}[C]\). This is the cor
 
 ### 6.1 Detection Probability Increases With Independent Reviewers
 
-If each reviewer detects a specific defect with probability \(r\) (independent), then probability it is caught by at least one of \(m\) reviewers:
+If each reviewer detects a specific defect with probability $r$ (independent), then probability it is caught by at least one of $m$ reviewers:
 
-\[
+$$
 P(\text{caught}) = 1-(1-r)^m
-\]
+$$
 
 ### 6.2 Majority Voting and Condorcet’s Jury Theorem
 
-Assume each reviewer (or extractor) makes the correct binary judgment with probability \(p\), independently. For odd \(n\), the probability majority is correct is:
+Assume each reviewer (or extractor) makes the correct binary judgment with probability $p$, independently. For odd $n$, the probability majority is correct is:
 
-\[
+$$
 P_{\text{maj}}(n,p)=\sum_{k=\lceil n/2 \rceil}^{n}\binom{n}{k}p^k(1-p)^{n-k}
-\]
+$$
 
-Condorcet’s theorem states that if \(p>\tfrac12\), then \(P_{\text{maj}}(n,p)\to 1\) as \(n\to\infty\) [CondorcetNotes].
+Condorcet’s theorem states that if $p>\tfrac12$, then $P_{\text{maj}}(n,p)\to 1$ as $n\to\infty$ [CondorcetNotes].
 
 **But independence is critical.** If all reviewers share the same noisy context and the same blind spots, their errors correlate and ensemble gains collapse. This repo’s design (isolated phases + structured artifacts + dedup/fact-check) is explicitly aimed at preserving reviewer independence.
 
@@ -284,23 +284,23 @@ Condorcet’s theorem states that if \(p>\tfrac12\), then \(P_{\text{maj}}(n,p)\
 
 ### 7.1 Drift as Constraint Violation Rate
 
-Let upstream artifact \(S\) define a constraint set \(\mathcal{C}(S)\).
-Let downstream target \(T\) (plan or code) be checked against these constraints.
+Let upstream artifact $S$ define a constraint set $\mathcal{C}(S)$.
+Let downstream target $T$ (plan or code) be checked against these constraints.
 
 Define weighted drift:
 
-\[
+$$
 \mathrm{Drift}(S,T)=\frac{\sum_{c\in\mathcal{C}(S)} w_c\cdot \mathbf{1}[\neg c(T)]}{\sum_{c\in\mathcal{C}(S)} w_c}
-\]
+$$
 
 This reduces “drift” to a measurable metric.
 
 ### 7.2 Claim Extraction + Verification as Hypothesis Testing
 
-For each claim \(c\), verification is a hypothesis test:
+For each claim $c$, verification is a hypothesis test:
 
-- \(H_0\): “claim holds in target”
-- \(H_1\): “claim violated / not supported”
+- $H_0$: “claim holds in target”
+- $H_1$: “claim violated / not supported”
 
 A practical system must balance:
 
@@ -309,13 +309,13 @@ A practical system must balance:
 
 ### 7.3 Dual-Extractor Adjudication
 
-If each extractor makes an incorrect verification with probability \(p\), and errors are independent, probability both are wrong:
+If each extractor makes an incorrect verification with probability $p$, and errors are independent, probability both are wrong:
 
-\[
+$$
 P(\text{both wrong}) = p^2
-\]
+$$
 
-So dual extraction reduces “confidently wrong” decisions quadratically in \(p\) _when independence holds_.
+So dual extraction reduces “confidently wrong” decisions quadratically in $p$ _when independence holds_.
 
 This repo encodes dual extraction as a first-class artifact requirement:
 
@@ -372,11 +372,11 @@ This repository operationalizes the above ideas with explicit contracts.
 
 The `file_ownership` constraint is equivalent to enforcing a partition on a conflict hypergraph.
 
-Let each task group \(g\) own a set of files \(F_g\).
+Let each task group $g$ own a set of files $F_g$.
 The schema enforces:
-\[
+$$
 F_g \cap F_h = \varnothing \quad \text{for } g\neq h
-\]
+$$
 
 This removes a major class of multi-agent merge conflicts and reduces coordination edges between builders.
 
@@ -384,11 +384,11 @@ This removes a major class of multi-agent merge conflicts and reduces coordinati
 
 By forcing each phase to consume only upstream artifacts (brief/design/plan) rather than the entire conversational backlog, the repo approximates an **information bottleneck** principle:
 
-\[
+$$
 \max \ I(I;Z) \quad \text{s.t. } |Z|\le B
-\]
+$$
 
-Where \(Z\) is the phase context and \(B\) is a tight budget. Here the artifact is a compressed sufficient statistic for the next phase.
+Where $Z$ is the phase context and $B$ is a tight budget. Here the artifact is a compressed sufficient statistic for the next phase.
 
 ---
 
@@ -397,20 +397,20 @@ Where \(Z\) is the phase context and \(B\) is a tight budget. Here the artifact 
 To evaluate whether phased orchestration helps in your environment, track:
 
 1. **Gate failure rate per phase**
-   \[
+   $$
    \hat{p}_{\text{fail}}(k)=\frac{\#\text{fails in phase }k}{\#\text{runs in phase }k}
-   \]
+   $$
 
 2. **Drift score trend**
-   \[
+   $$
    \mathrm{Drift}(S,T)\ \text{over time}
-   \]
+   $$
 
 3. **Review dedup ratio**
-   \[
+   $$
    \rho=\frac{\#\text{raw findings}}{\#\text{deduplicated findings}}
-   \]
-   High \(\rho\) suggests large redundancy and thus high coordination noise.
+   $$
+   High $\rho$ suggests large redundancy and thus high coordination noise.
 
 4. **Rework cost proxy**
 
@@ -457,7 +457,7 @@ These metrics directly operationalize the theory: information density, coordinat
 ### Coordination and agent-system scaling
 
 - [Brooks1975] F. P. Brooks. _The Mythical Man-Month: Essays on Software Engineering_. Addison-Wesley, 1975 (Anniversary Ed. 1995).  
-  (Discussion of coordination overhead; commonly expressed channel count \(n(n-1)/2\).)
+  (Discussion of coordination overhead; commonly expressed channel count $n(n-1)/2$.)
 - [Kim2025] Y. Kim et al. _Towards a Science of Scaling Agent Systems_. arXiv: `2512.08296`  
   `https://arxiv.org/abs/2512.08296`
 - [KimBlog2025] Google Research blog overview of the same work  

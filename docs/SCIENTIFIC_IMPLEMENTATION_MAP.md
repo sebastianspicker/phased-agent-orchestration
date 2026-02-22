@@ -302,31 +302,31 @@ This is an internal consistency theorem: if any of these invariants break, the o
 
 ### 6.1 Context is noise: an information-theoretic view
 
-Let a context window be a sequence of tokens \(X\) composed of:
+Let a context window be a sequence of tokens $X$ composed of:
 
-- relevant signal \(S\)
-- irrelevant content (noise) \(N\)
+- relevant signal $S$
+- irrelevant content (noise) $N$
 
-So \(X = (S, N)\).
+So $X = (S, N)$.
 
-A useful proxy for “how learnable/useful the context is” for a given task \(Y\) is mutual information:
+A useful proxy for “how learnable/useful the context is” for a given task $Y$ is mutual information:
 
-\[
+$$
 I(X; Y) = I(S,N;Y) = I(S;Y) + I(N;Y \mid S)
-\]
+$$
 
-In practice, \(I(N;Y \mid S)\) is close to 0 (noise rarely helps) but it still consumes attention and increases the risk of spurious correlations.
+In practice, $I(N;Y \mid S)$ is close to 0 (noise rarely helps) but it still consumes attention and increases the risk of spurious correlations.
 
 A phase-scoped system implicitly optimizes a “mutual information per token” objective:
 
-\[
+$$
 \max_{\text{context}} \ \frac{I(X;Y)}{|X|}
-\]
+$$
 
 Phased orchestration improves this ratio by:
 
-- reducing \(|X|\) (tight context boundaries)
-- maintaining \(I(S;Y)\) by ensuring each phase receives only the required artifacts
+- reducing $|X|$ (tight context boundaries)
+- maintaining $I(S;Y)$ by ensuring each phase receives only the required artifacts
 
 This is exactly why this repo forbids carrying full conversational history across phases and instead transfers only typed artifacts.
 
@@ -334,19 +334,19 @@ This is exactly why this repo forbids carrying full conversational history acros
 
 ### 6.2 Coordination tax: why many agents or patterns can get worse
 
-With \(n\) concurrent contributors, naive coordination overhead often scales like the number of pairwise interactions:
+With $n$ concurrent contributors, naive coordination overhead often scales like the number of pairwise interactions:
 
-\[
+$$
 C(n) \propto \binom{n}{2} = \frac{n(n-1)}{2}
-\]
+$$
 
-Even if each agent adds useful work \(D_i\), total performance \(P(n)\) can degrade:
+Even if each agent adds useful work $D_i$, total performance $P(n)$ can degrade:
 
-\[
+$$
 P(n) = \sum_{i=1}^{n} D_i - C(n)
-\]
+$$
 
-This repo reduces \(C(n)\) structurally via:
+This repo reduces $C(n)$ structurally via:
 
 - bounded task groups (3–6 tasks, max 8)
 - exclusive file ownership (no shared writes)
@@ -358,19 +358,19 @@ This repo reduces \(C(n)\) structurally via:
 ### 6.3 Dual-extractor drift adjudication: reducing error by independent extraction
 
 Assume two independent extractors produce claim verifications.
-Let each extractor have probability \(p\) of producing an incorrect verification for a given claim.
+Let each extractor have probability $p$ of producing an incorrect verification for a given claim.
 
 If their errors are independent, the probability both are wrong is:
 
-\[
+$$
 P(\text{both wrong}) = p^2
-\]
+$$
 
-So with \(p = 0.2\), we get:
+So with $p = 0.2$, we get:
 
-\[
+$$
 p^2 = 0.04
-\]
+$$
 
 The dual-extractor mechanism therefore reduces “confidently wrong drift decisions” by an order of magnitude if independence is preserved.
 
@@ -387,8 +387,8 @@ This is why:
 Each phase transition is permitted only on pass.
 Model the pipeline as a Markov process over stage states:
 
-- \(s_i\): phase \(i\)
-- \(f_i\): failure state for phase \(i\)
+- $s_i$: phase $i$
+- $f_i$: failure state for phase $i$
 
 With a gate, failures become absorbing states until remediation occurs (external intervention), which prevents silent drift accumulation.
 
