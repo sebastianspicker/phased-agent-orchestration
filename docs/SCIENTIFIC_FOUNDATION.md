@@ -94,13 +94,13 @@ Meaning: **adding noise increases tokens but not intent information**.
 A useful normalized measure is:
 
 \[
-\mathrm{SNR}\_{\text{info}}(I \rightarrow C) \;=\; \frac{I(I;C)}{H(C)}
+\mathrm{SNR}_{\text{info}}(I \rightarrow C) \;=\; \frac{I(I;C)}{H(C)}
 \]
 
 Since \(H(C)\) (entropy / description length) increases with noise, while \(I(I;C)\) barely increases, the normalized signal-to-noise ratio drops:
 
 \[
-\mathrm{SNR}\_{\text{info}} \downarrow \quad \text{as noise tokens grow}
+\mathrm{SNR}_{\text{info}} \downarrow \quad \text{as noise tokens grow}
 \]
 
 **Interpretation:** Larger context windows can create _worse reasoning_ because they can **dilute** relevant information with irrelevant material.
@@ -110,7 +110,7 @@ Since \(H(C)\) (entropy / description length) increases with noise, while \(I(I;
 Transformer attention assigns weights:
 
 \[
-a*i = \frac{\exp(q \cdot k_i)}{\sum*{j=1}^{L}\exp(q \cdot k_j)}
+a_i = \frac{\exp(q \cdot k_i)}{\sum_{j=1}^{L}\exp(q \cdot k_j)}
 \]
 
 Adding \(K\) additional irrelevant tokens increases the denominator. Under mild assumptions (irrelevant keys are not always trivially separable), the expected total mass allocated to true signal tokens decreases roughly with:
@@ -146,13 +146,13 @@ Multi-agent systems introduce an overhead: every additional agent increases the 
 A classic model (Brooks-style) is the number of pairwise communication channels in a fully connected team:
 
 \[
-E\_{\text{complete}}(n) = \frac{n(n-1)}{2}
+E_{\text{complete}}(n) = \frac{n(n-1)}{2}
 \]
 
 If coordination cost per channel is \(\alpha\), then:
 
 \[
-C\_{\text{coord}}(n) \approx \alpha \cdot \frac{n(n-1)}{2} \in \Theta(n^2)
+C_{\text{coord}}(n) \approx \alpha \cdot \frac{n(n-1)}{2} \in \Theta(n^2)
 \]
 
 **That is the “too many cooks” problem in math form.**
@@ -162,7 +162,7 @@ C\_{\text{coord}}(n) \approx \alpha \cdot \frac{n(n-1)}{2} \in \Theta(n^2)
 If you shift from group chat to a **hub-and-spoke** structure (one orchestrator + workers), edges become:
 
 \[
-E\_{\text{star}}(n) = n-1 \in \Theta(n)
+E_{\text{star}}(n) = n-1 \in \Theta(n)
 \]
 
 So the architecture (communication topology) changes the scaling law.
@@ -194,7 +194,7 @@ Because humans and agents are fallible, and because each transformation is lossy
 Drift can be formalized as a divergence between required constraints and realized constraints. If we define a set of constraints \( \mathcal{C}(D) \) extracted from design, then a drift score can be:
 
 \[
-\mathrm{Drift}(D, X) \;=\; \frac{\sum*{c \in \mathcal{C}(D)} w_c \cdot \mathbf{1}[\neg c(X)]}{\sum*{c \in \mathcal{C}(D)} w_c}
+\mathrm{Drift}(D, X) \;=\; \frac{\sum_{c \in \mathcal{C}(D)} w_c \cdot \mathbf{1}[\neg c(X)]}{\sum_{c \in \mathcal{C}(D)} w_c}
 \]
 
 Where:
@@ -229,7 +229,7 @@ Phased orchestration is designed to preserve judgment:
 Each phase emits an artifact \(A_k\). A gate \(G_k\) decides whether it is valid.
 
 \[
-A*k = f_k(A*{k-1}, \text{scoped context})
+A_k = f_k(A_{k-1}, \text{scoped context})
 \]
 \[
 G_k(A_k) \in \{\text{pass}, \text{fail}\}
@@ -339,7 +339,7 @@ Let phases be states:
 Transitions are conditional on gates:
 
 \[
-s\_{k+1} = T(s_k, A_k) \quad \text{only if} \quad G_k(A_k)=\text{pass}
+s_{k+1} = T(s_k, A_k) \quad \text{only if} \quad G_k(A_k)=\text{pass}
 \]
 
 This is a deterministic control structure around non-deterministic generators (LLMs).
@@ -361,7 +361,7 @@ p_k^{\text{res}} = p_k(1-d_k)
 If defects are approximately independent across phases (a simplifying assumption), the probability that the final output contains at least one defect is:
 
 \[
-P*{\text{defect}} = 1 - \prod*{k=1}^{K} (1 - p_k^{\text{res}})
+P_{\text{defect}} = 1 - \prod_{k=1}^{K} (1 - p_k^{\text{res}})
 \]
 
 Adding gates increases \(d_k\), reducing \(p_k^{\text{res}}\), and reducing total defect risk.
@@ -387,7 +387,7 @@ Maximize \(S(n)\). Approximate in continuous \(n\):
 Setting to zero:
 
 \[
-n^\* \approx \frac{b}{\alpha} + \frac{1}{2}
+n^{*} \approx \frac{b}{\alpha} + \frac{1}{2}
 \]
 
 So if coordination costs rise, optimal team size shrinks.

@@ -34,7 +34,7 @@ A minimal information-theoretic lens:
 
 - **Entropy**:
   \[
-  H(X) = -\sum\_{x} p(x)\log p(x)
+  H(X) = -\sum_{x} p(x)\log p(x)
   \]
 
 - **Mutual information**:
@@ -76,7 +76,7 @@ This repo’s design choice (“scoped context per phase”) is equivalent to ma
 For a Transformer, attention weights for a query \(q\) and key \(k_i\) are:
 
 \[
-a*i = \frac{\exp(q^\top k_i)}{\sum*{j=1}^{L}\exp(q^\top k_j)}
+a_i = \frac{\exp(q^\top k_i)}{\sum_{j=1}^{L}\exp(q^\top k_j)}
 \]
 
 When you add \(K\) extra tokens, the denominator increases. Even if the model _can_ learn to suppress noise, real systems empirically show sensitivity to where relevant information appears in long contexts (“position effects”).
@@ -143,13 +143,13 @@ Model agent collaboration as a graph \(G=(V,E)\) where vertices are agents and e
 
 - In a fully connected team of \(n\) agents:
   \[
-  |E\_{\text{complete}}| = \binom{n}{2} = \frac{n(n-1)}{2}
+  |E_{\text{complete}}| = \binom{n}{2} = \frac{n(n-1)}{2}
   \]
   This is the classic “channels of communication” model often discussed in software engineering coordination arguments (popularly associated with Brooks’ observations) [Brooks1975].
 
 - In a hub-and-spoke topology (one orchestrator + \(n-1\) workers):
   \[
-  |E\_{\text{star}}| = n-1
+  |E_{\text{star}}| = n-1
   \]
 
 So topology changes coordination complexity from \(\Theta(n^2)\) to \(\Theta(n)\).
@@ -165,7 +165,7 @@ S(n)=nb-\alpha\cdot \frac{n(n-1)}{2}
 Maximizing w.r.t \(n\) (continuous approximation):
 \[
 \frac{dS}{dn}=b-\alpha\left(n-\frac12\right)=0
-\Rightarrow n^\* \approx \frac{b}{\alpha}+\frac12
+\Rightarrow n^{*} \approx \frac{b}{\alpha}+\frac12
 \]
 
 Interpretation:
@@ -199,7 +199,7 @@ Let phases be states:
 Each phase emits an artifact \(A_k\). A gate \(G_k\) validates it:
 
 \[
-A*k = f_k(A*{k-1}, C_k)
+A_k = f_k(A_{k-1}, C_k)
 \]
 \[
 G_k(A_k)\in\{\text{pass},\text{fail},\text{warn}\}
@@ -234,7 +234,7 @@ p_k^{\text{res}} = p_k(1-d_k)
 If phases are approximately independent, probability of at least one defect surviving across \(K\) phases:
 
 \[
-P(\text{defect}) = 1-\prod\_{k=1}^{K}\left(1-p_k^{\text{res}}\right)
+P(\text{defect}) = 1-\prod_{k=1}^{K}\left(1-p_k^{\text{res}}\right)
 \]
 
 Even modest \(d_k\) (detection power) can drastically reduce risk because gating composes multiplicatively across phases.
@@ -245,7 +245,7 @@ Let the cost to fix a defect discovered after phase \(k\) be \(c_k\), typically 
 
 Expected rework cost:
 \[
-\mathbb{E}[C] = \sum\_{k=1}^{K} c_k \cdot P(\text{defect discovered at phase }k)
+\mathbb{E}[C] = \sum_{k=1}^{K} c_k \cdot P(\text{defect discovered at phase }k)
 \]
 
 Architectures that move checks earlier reduce \(\mathbb{E}[C]\). This is the core economic argument for gates.
@@ -267,10 +267,10 @@ P(\text{caught}) = 1-(1-r)^m
 Assume each reviewer (or extractor) makes the correct binary judgment with probability \(p\), independently. For odd \(n\), the probability majority is correct is:
 
 \[
-P*{\text{maj}}(n,p)=\sum*{k=\lceil n/2 \rceil}^{n}\binom{n}{k}p^k(1-p)^{n-k}
+P_{\text{maj}}(n,p)=\sum_{k=\lceil n/2 \rceil}^{n}\binom{n}{k}p^k(1-p)^{n-k}
 \]
 
-Condorcet’s theorem states that if \(p>\tfrac12\), then \(P\_{\text{maj}}(n,p)\to 1\) as \(n\to\infty\) [CondorcetNotes].
+Condorcet’s theorem states that if \(p>\tfrac12\), then \(P_{\text{maj}}(n,p)\to 1\) as \(n\to\infty\) [CondorcetNotes].
 
 **But independence is critical.** If all reviewers share the same noisy context and the same blind spots, their errors correlate and ensemble gains collapse. This repo’s design (isolated phases + structured artifacts + dedup/fact-check) is explicitly aimed at preserving reviewer independence.
 
@@ -290,7 +290,7 @@ Let downstream target \(T\) (plan or code) be checked against these constraints.
 Define weighted drift:
 
 \[
-\mathrm{Drift}(S,T)=\frac{\sum*{c\in\mathcal{C}(S)} w_c\cdot \mathbf{1}[\neg c(T)]}{\sum*{c\in\mathcal{C}(S)} w_c}
+\mathrm{Drift}(S,T)=\frac{\sum_{c\in\mathcal{C}(S)} w_c\cdot \mathbf{1}[\neg c(T)]}{\sum_{c\in\mathcal{C}(S)} w_c}
 \]
 
 This reduces “drift” to a measurable metric.
@@ -398,7 +398,7 @@ To evaluate whether phased orchestration helps in your environment, track:
 
 1. **Gate failure rate per phase**
    \[
-   \hat{p}\_{\text{fail}}(k)=\frac{\#\text{fails in phase }k}{\#\text{runs in phase }k}
+   \hat{p}_{\text{fail}}(k)=\frac{\#\text{fails in phase }k}{\#\text{runs in phase }k}
    \]
 
 2. **Drift score trend**
