@@ -95,6 +95,33 @@ describe("detectDrift", () => {
     expect(findings.length).toBeGreaterThan(0);
   });
 
+  it("includes assertions that appear before the first heading", () => {
+    const source = [
+      "- Must enforce authentication at edge",
+      "# API",
+      "- Must return typed errors",
+    ].join("\n");
+
+    const target = [
+      "# API",
+      "Typed errors are returned.",
+    ].join("\n");
+
+    const { claims } = detectDrift(source, target);
+
+    expect(claims.some((c) => c.claim.toLowerCase().includes("authentication"))).toBe(true);
+  });
+
+  it("does not treat heading substrings in body text as heading matches", () => {
+    const source = "# API\nBody";
+    const target = "Rapid rollout plan with no headings.";
+
+    const { claims } = detectDrift(source, target);
+
+    expect(claims).toHaveLength(1);
+    expect(claims[0]?.verification_status).toBe("violated");
+  });
+
   it("assigns high/medium severity to non-verified claims", () => {
     const source = [
       "# API",

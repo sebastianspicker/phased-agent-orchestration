@@ -7,6 +7,10 @@ function readStdin(): string {
   return readFileSync(0, "utf8");
 }
 
+function getErrorDetails(stack?: string): string | undefined {
+  return process.env.DEBUG_ERROR_DETAILS === "1" ? stack : undefined;
+}
+
 async function main() {
   const t0 = performance.now();
   let logs: string[] = [];
@@ -40,7 +44,7 @@ async function main() {
       error: {
         code: error.code ?? "E_UNKNOWN",
         message: error.message ?? "Unknown error",
-        details: error.stack,
+        details: getErrorDetails(error.stack),
       },
       metadata: {
         tool_version: "0.1.0",

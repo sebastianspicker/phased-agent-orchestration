@@ -114,6 +114,7 @@
           },
           "findings": {
             "type": "array",
+            "minItems": 1,
             "items": {
               "type": "object",
               "additionalProperties": false,
@@ -143,7 +144,9 @@
         },
         "target_ref": {
           "type": "string",
-          "description": "Path to target document"
+          "minLength": 1,
+          "pattern": "^(?!([A-Za-z]:)?[\\\\/]).+",
+          "description": "Path to target document relative to workspace root"
         },
         "mode": {
           "type": "string",

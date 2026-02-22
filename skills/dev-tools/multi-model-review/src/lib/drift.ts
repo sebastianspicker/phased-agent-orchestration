@@ -32,6 +32,7 @@ function parseSections(text: string): Section[] {
   const lines = text.split("\n");
   const sections: Section[] = [];
   let current: Section | null = null;
+  const preambleLines: string[] = [];
 
   for (const line of lines) {
     const headingMatch = line.match(/^#{1,6}\s+(.+)/);
@@ -40,20 +41,32 @@ function parseSections(text: string): Section[] {
       current = { heading: headingMatch[1]!.trim(), body: "" };
     } else if (current) {
       current.body += line + "\n";
+    } else {
+      preambleLines.push(line);
     }
   }
   if (current) sections.push(current);
 
-  // Fallback for plain-text documents that do not use markdown headings.
-  if (sections.length === 0 && text.trim().length > 0) {
-    sections.push({
-      heading: "Document",
-      body: text,
+  const preamble = preambleLines.join("\n").trim();
+  if (preamble.length > 0) {
+    sections.unshift({
+      heading: sections.length > 0 ? "Preamble" : "Document",
+      body: preamble,
       synthetic: true,
     });
   }
 
   return sections;
+}
+
+function extractNormalizedHeadings(text: string): Set<string> {
+  const headings = new Set<string>();
+  for (const line of text.split("\n")) {
+    const headingMatch = line.match(/^#{1,6}\s+(.+)/);
+    if (!headingMatch) continue;
+    headings.add(normalize(headingMatch[1]!.trim()));
+  }
+  return headings;
 }
 
 /**
@@ -229,6 +242,7 @@ function adjudicatePair(
 
 export function detectDrift(sourceText: string, targetText: string): DriftDetectionResult {
   const sourceSections = parseSections(sourceText);
+  const targetHeadings = extractNormalizedHeadings(targetText);
   const claims: DriftClaim[] = [];
   const findings: DriftFinding[] = [];
   let claimIdx = 0;
@@ -237,7 +251,10 @@ export function detectDrift(sourceText: string, targetText: string): DriftDetect
     const assertions = extractAssertions(section.body);
 
     if (assertions.length === 0) {
-      const sectionPresent = normalize(targetText).includes(normalize(section.heading));
+      if (section.synthetic) {
+        continue;
+      }
+      const sectionPresent = targetHeadings.has(normalize(section.heading));
       const id = `drift-${++claimIdx}`;
       const claimText = `Section "${section.heading}" should be present`;
       const verificationStatus: DriftVerificationStatus = sectionPresent ? "verified" : "violated";

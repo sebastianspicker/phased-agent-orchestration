@@ -18,7 +18,14 @@
         "required": ["audit_type"]
       },
       "then": {
-        "required": ["security_audit"]
+        "required": ["security_audit"],
+        "properties": {
+          "violations": {
+            "items": {
+              "required": ["category"]
+            }
+          }
+        }
       }
     }
   ],
@@ -165,7 +172,7 @@
               "jwt-auth"
             ]
           },
-          "minItems": 10,
+          "minItems": 14,
           "uniqueItems": true
         },
         "checks": {
@@ -188,20 +195,20 @@
             "jwt_auth"
           ],
           "properties": {
-            "access_control": { "type": "boolean" },
-            "xss": { "type": "boolean" },
-            "csrf": { "type": "boolean" },
-            "secrets": { "type": "boolean" },
-            "security_headers": { "type": "boolean" },
-            "cookies_session": { "type": "boolean" },
-            "production_exposure": { "type": "boolean" },
-            "dependencies": { "type": "boolean" },
-            "ssrf": { "type": "boolean" },
-            "file_upload": { "type": "boolean" },
-            "injection": { "type": "boolean" },
-            "path_traversal": { "type": "boolean" },
-            "open_redirect": { "type": "boolean" },
-            "jwt_auth": { "type": "boolean" }
+            "access_control": { "const": true },
+            "xss": { "const": true },
+            "csrf": { "const": true },
+            "secrets": { "const": true },
+            "security_headers": { "const": true },
+            "cookies_session": { "const": true },
+            "production_exposure": { "const": true },
+            "dependencies": { "const": true },
+            "ssrf": { "const": true },
+            "file_upload": { "const": true },
+            "injection": { "const": true },
+            "path_traversal": { "const": true },
+            "open_redirect": { "const": true },
+            "jwt_auth": { "const": true }
           }
         },
         "fix_loop": {
@@ -216,8 +223,8 @@
           "properties": {
             "rounds": { "type": "integer", "minimum": 1 },
             "critical_high_before": { "type": "integer", "minimum": 0 },
-            "critical_high_after": { "type": "integer", "minimum": 0 },
-            "rescan_completed": { "type": "boolean" }
+            "critical_high_after": { "const": 0 },
+            "rescan_completed": { "const": true }
           }
         },
         "tools": {

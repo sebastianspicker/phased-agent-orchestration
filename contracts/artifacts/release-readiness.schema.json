@@ -43,7 +43,30 @@
             "required": ["required", "doc_path", "validated"],
             "properties": {
               "required": { "const": true },
-              "doc_path": { "type": "string", "minLength": 1 }
+              "doc_path": { "type": "string", "minLength": 1 },
+              "validated": { "const": true }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "release_decision": { "const": "go" }
+        },
+        "required": ["release_decision"]
+      },
+      "then": {
+        "properties": {
+          "changelog": {
+            "properties": {
+              "updated": { "const": true }
+            }
+          },
+          "rollback": {
+            "properties": {
+              "tested": { "const": true }
             }
           }
         }

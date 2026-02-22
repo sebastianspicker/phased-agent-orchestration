@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import Ajv from "ajv";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import type { Input } from "../../src/types.js";
@@ -77,12 +77,12 @@ describe("contract integration", () => {
       },
       drift_config: {
         source_ref: ".pipeline/runs/demo/plan.json",
-        target_ref: targetPath,
+        target_ref: "target.md",
       },
     };
     validateInput(input);
     const logs: string[] = [];
-    const data = runDriftDetect(input, logs);
+    const data = runDriftDetect(input, logs, { workspaceRoot: tempDir });
     const schema = loadSchema("contracts/artifacts/drift-report.schema.json");
     const validated = validateWithSchema(schema, data);
 
@@ -106,7 +106,7 @@ describe("contract integration", () => {
       },
       drift_config: {
         source_ref: ".pipeline/runs/demo/plan.json",
-        target_ref: targetPath,
+        target_ref: "target.md",
         mode: "dual-extractor",
         extractor_claim_sets: [
           {
@@ -138,7 +138,7 @@ describe("contract integration", () => {
     };
 
     validateInput(input);
-    const data = runDriftDetect(input, []);
+    const data = runDriftDetect(input, [], { workspaceRoot: tempDir });
     const schema = loadSchema("contracts/artifacts/drift-report.schema.json");
     const validated = validateWithSchema(schema, data);
 
@@ -164,7 +164,7 @@ describe("contract integration", () => {
     expect(() => validateInput(input)).toThrow("drift_config.target_ref is required");
   });
 
-  it("fails drift-detect when target_ref cannot be read", () => {
+  it("rejects drift-detect with empty target_ref", () => {
     const input: Input = {
       action: { type: "drift-detect" },
       document: {
@@ -172,12 +172,100 @@ describe("contract integration", () => {
         type: "plan",
       },
       drift_config: {
-        target_ref: "/definitely/missing/file.md",
+        target_ref: "",
+      },
+    };
+
+    expect(() => validateInput(input)).toThrow("drift_config.target_ref is required");
+  });
+
+  it("fails drift-detect when target_ref cannot be read", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "mmr-drift-missing-target-"));
+    const input: Input = {
+      action: { type: "drift-detect" },
+      document: {
+        content: "# API\n- Must support GraphQL subscriptions",
+        type: "plan",
+      },
+      drift_config: {
+        target_ref: "missing/file.md",
       },
     };
     validateInput(input);
 
-    expect(() => runDriftDetect(input, [])).toThrow("Could not read target_ref");
+    expect(() => runDriftDetect(input, [], { workspaceRoot: tempDir })).toThrow(
+      "Could not read target_ref",
+    );
+
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it("rejects drift-detect with absolute target_ref", () => {
+    const input: Input = {
+      action: { type: "drift-detect" },
+      document: {
+        content: "# API\n- Must support GraphQL subscriptions",
+        type: "plan",
+      },
+      drift_config: {
+        target_ref: "/tmp/target.md",
+      },
+    };
+
+    expect(() => validateInput(input)).toThrow("must resolve within workspaceRoot");
+  });
+
+  it("rejects drift-detect target_ref traversal outside workspaceRoot", () => {
+    const baseDir = mkdtempSync(join(tmpdir(), "mmr-drift-traversal-"));
+    const workspaceRoot = join(baseDir, "workspace");
+    mkdirSync(workspaceRoot, { recursive: true });
+
+    const input: Input = {
+      action: { type: "drift-detect" },
+      document: {
+        content: "# API\n- Must support GraphQL subscriptions",
+        type: "plan",
+      },
+      drift_config: {
+        target_ref: "../outside.md",
+      },
+    };
+    validateInput(input);
+
+    expect(() => runDriftDetect(input, [], { workspaceRoot })).toThrow(
+      "drift_config.target_ref must resolve within workspaceRoot",
+    );
+
+    rmSync(baseDir, { recursive: true, force: true });
+  });
+
+  it("rejects drift-detect target_ref symlink escapes outside workspaceRoot", () => {
+    const workspaceRoot = mkdtempSync(join(tmpdir(), "mmr-drift-workspace-link-"));
+    const externalDir = mkdtempSync(join(tmpdir(), "mmr-drift-external-link-"));
+    const externalTarget = join(externalDir, "target.md");
+    writeFileSync(externalTarget, "# external", "utf8");
+
+    const linkPath = join(workspaceRoot, "target.md");
+    symlinkSync(externalTarget, linkPath);
+
+    const input: Input = {
+      action: { type: "drift-detect" },
+      document: {
+        content: "# API\n- Must support GraphQL subscriptions",
+        type: "plan",
+      },
+      drift_config: {
+        target_ref: "target.md",
+      },
+    };
+    validateInput(input);
+
+    expect(() => runDriftDetect(input, [], { workspaceRoot })).toThrow(
+      "drift_config.target_ref must resolve within workspaceRoot",
+    );
+
+    rmSync(workspaceRoot, { recursive: true, force: true });
+    rmSync(externalDir, { recursive: true, force: true });
   });
 
   it("rejects dual-extractor mode without extractor claim sets", () => {
@@ -189,10 +277,169 @@ describe("contract integration", () => {
       },
       drift_config: {
         mode: "dual-extractor",
-        target_ref: "/tmp/placeholder.md",
+        target_ref: "placeholder.md",
       },
     };
 
     expect(() => validateInput(input)).toThrow("extractor_claim_sets");
+  });
+
+  it("rejects review findings entries missing findings arrays", () => {
+    const input: Input = {
+      action: { type: "review" },
+      document: {
+        content: "# Design\n- Must keep schema contracts as source of truth.",
+        type: "design",
+      },
+      reviewer_findings: [
+        {
+          reviewer_id: "architect-reviewer",
+          role: "architect",
+        } as unknown as Input["reviewer_findings"][number],
+      ],
+    };
+
+    expect(() => validateInput(input)).toThrow("Each reviewer_findings entry requires");
+  });
+
+  it("rejects review entries with empty findings arrays", () => {
+    const input: Input = {
+      action: { type: "review" },
+      document: {
+        content: "# Design\n- Must keep schema contracts as source of truth.",
+        type: "design",
+      },
+      reviewer_findings: [
+        {
+          reviewer_id: "architect-reviewer",
+          role: "architect",
+          findings: [],
+        },
+      ],
+    };
+
+    expect(() => validateInput(input)).toThrow("non-empty findings array");
+  });
+
+  it("rejects review findings with invalid severity enum", () => {
+    const input: Input = {
+      action: { type: "review" },
+      document: {
+        content: "# Design\n- Must keep schema contracts as source of truth.",
+        type: "design",
+      },
+      reviewer_findings: [
+        {
+          reviewer_id: "architect-reviewer",
+          role: "architect",
+          findings: [
+            {
+              id: "f-1",
+              category: "security",
+              description: "Invalid severity should be rejected",
+              severity: "urgent" as unknown as "medium",
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(() => validateInput(input)).toThrow("severity must be one of");
+  });
+
+  it("rejects non-string optional finding fields", () => {
+    const input: Input = {
+      action: { type: "review" },
+      document: {
+        content: "# Design\n- Must keep schema contracts as source of truth.",
+        type: "design",
+      },
+      reviewer_findings: [
+        {
+          reviewer_id: "architect-reviewer",
+          role: "architect",
+          findings: [
+            {
+              id: "f-1",
+              category: "security",
+              description: "Optional fields must stay typed",
+              severity: "medium",
+              evidence: 123 as unknown as string,
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(() => validateInput(input)).toThrow("evidence must be a string");
+  });
+
+  it("rejects unexpected properties in reviewer_findings entries", () => {
+    const input: Input = {
+      action: { type: "review" },
+      document: {
+        content: "# Design\n- Must keep schema contracts as source of truth.",
+        type: "design",
+      },
+      reviewer_findings: [
+        {
+          reviewer_id: "architect-reviewer",
+          role: "architect",
+          findings: [],
+          extra: "not-allowed",
+        } as unknown as Input["reviewer_findings"][number],
+      ],
+    };
+
+    expect(() => validateInput(input)).toThrow("Unexpected property");
+  });
+
+  it("rejects malformed reviewer_findings even for drift-detect action", () => {
+    const input: Input = {
+      action: { type: "drift-detect" },
+      document: {
+        content: "# API\n- Must support GraphQL subscriptions",
+        type: "plan",
+      },
+      drift_config: {
+        target_ref: "placeholder.md",
+      },
+      reviewer_findings: [
+        {
+          foo: "bar",
+        } as unknown as Input["reviewer_findings"][number],
+      ],
+    };
+
+    expect(() => validateInput(input)).toThrow("reviewer_findings");
+  });
+
+  it("rejects malformed drift_config even for review action", () => {
+    const input: Input = {
+      action: { type: "review" },
+      document: {
+        content: "# Design\n- Must keep schema contracts as source of truth.",
+        type: "design",
+      },
+      reviewer_findings: [
+        {
+          reviewer_id: "architect-reviewer",
+          role: "architect",
+          findings: [
+            {
+              id: "f-1",
+              category: "security",
+              description: "Typed review entry",
+              severity: "low",
+            },
+          ],
+        },
+      ],
+      drift_config: {
+        target_ref: 123 as unknown as string,
+      },
+    };
+
+    expect(() => validateInput(input)).toThrow("drift_config.target_ref");
   });
 });

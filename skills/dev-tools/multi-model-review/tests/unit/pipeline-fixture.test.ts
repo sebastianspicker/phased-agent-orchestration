@@ -236,11 +236,11 @@ describe("pipeline fixture integration", () => {
       },
       drift_config: {
         source_ref: ".pipeline/runs/demo/plan.json",
-        target_ref: targetPath,
+        target_ref: "implementation.md",
       },
     };
     validateInput(driftInput);
-    const driftArtifact = runDriftDetect(driftInput, []);
+    const driftArtifact = runDriftDetect(driftInput, [], { workspaceRoot: tempDir });
     expectSchemaValid("contracts/artifacts/drift-report.schema.json", driftArtifact);
 
     rmSync(tempDir, { recursive: true, force: true });

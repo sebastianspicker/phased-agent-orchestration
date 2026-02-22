@@ -34,4 +34,57 @@ describe("validateInput", () => {
     const input = makeInput({ artifact_ref: 123 as unknown as Input["artifact_ref"] });
     expect(() => validateInput(input)).toThrow("artifact_ref must be a string when provided");
   });
+
+  it("rejects unknown criterion types", () => {
+    const input = makeInput({
+      criteria: [{ name: "bad", type: "unknown" as Input["criteria"][number]["type"], path: "x" }],
+    });
+    expect(() => validateInput(input)).toThrow("Each criterion type must be one of");
+  });
+
+  it("requires numeric count-min values", () => {
+    const input = makeInput({
+      criteria: [
+        {
+          name: "min-items",
+          type: "count-min",
+          path: "items",
+          value: "2" as unknown as number,
+        },
+      ],
+    });
+    expect(() => validateInput(input)).toThrow(
+      "count-min criterion requires a non-negative integer value",
+    );
+  });
+
+  it("requires non-negative integer count-min values", () => {
+    const input = makeInput({
+      criteria: [
+        {
+          name: "min-items",
+          type: "count-min",
+          path: "items",
+          value: -1,
+        },
+      ],
+    });
+    expect(() => validateInput(input)).toThrow(
+      "count-min criterion requires a non-negative integer value",
+    );
+  });
+
+  it("requires non-empty string regex-match values", () => {
+    const input = makeInput({
+      criteria: [
+        {
+          name: "semver",
+          type: "regex-match",
+          path: "version",
+          value: "",
+        },
+      ],
+    });
+    expect(() => validateInput(input)).toThrow("regex-match criterion requires non-empty string value");
+  });
 });

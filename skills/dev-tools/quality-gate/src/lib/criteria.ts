@@ -1,10 +1,51 @@
 import type { Criterion, CriterionResult } from "../types.js";
 
+const MAX_REGEX_PATTERN_LENGTH = 256;
+const MAX_REGEX_TARGET_LENGTH = 4096;
+
+function hasUnescapedChar(pattern: string, target: string): boolean {
+  let escaped = false;
+  for (const ch of pattern) {
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (ch === target) return true;
+  }
+  return false;
+}
+
+function isPotentiallyUnsafeRegex(pattern: string): boolean {
+  if (pattern.length > MAX_REGEX_PATTERN_LENGTH) return true;
+
+  // Backreferences, groups/lookarounds and alternation are common ReDoS primitives.
+  if (/\\[1-9]/.test(pattern)) return true;
+  if (hasUnescapedChar(pattern, "(") || hasUnescapedChar(pattern, ")")) return true;
+  if (hasUnescapedChar(pattern, "|")) return true;
+  if (/\(\?/.test(pattern)) return true;
+  if (/(\.\*|\.\+)/.test(pattern)) return true;
+  if (/[+*?]{2,}/.test(pattern)) return true;
+  if (/\{\d+,\}/.test(pattern) || /\{,\d+\}/.test(pattern)) return true;
+
+  return false;
+}
+
 function resolvePath(obj: Record<string, unknown>, path: string): unknown {
+  const DISALLOWED_SEGMENTS = new Set(["__proto__", "prototype", "constructor"]);
   const segments = path.split(".");
   let current: unknown = obj;
   for (const seg of segments) {
     if (current === null || current === undefined || typeof current !== "object") {
+      return undefined;
+    }
+    if (DISALLOWED_SEGMENTS.has(seg)) {
+      return undefined;
+    }
+    if (!Object.prototype.hasOwnProperty.call(current, seg)) {
       return undefined;
     }
     current = (current as Record<string, unknown>)[seg];
@@ -56,7 +97,19 @@ function checkCountMin(
       evidence: `Field "${path}" is not an array`,
     };
   }
-  const min = typeof minValue === "number" ? minValue : 0;
+  if (
+    typeof minValue !== "number" ||
+    !Number.isFinite(minValue) ||
+    !Number.isInteger(minValue) ||
+    minValue < 0
+  ) {
+    return {
+      name: "",
+      passed: false,
+      evidence: "count-min value must be a non-negative integer",
+    };
+  }
+  const min = minValue;
   const passed = val.length >= min;
   return {
     name: "",
@@ -83,6 +136,20 @@ function checkRegexMatch(
       name: "",
       passed: false,
       evidence: `Regex pattern must be a string, got ${typeof pattern}`,
+    };
+  }
+  if (val.length > MAX_REGEX_TARGET_LENGTH) {
+    return {
+      name: "",
+      passed: false,
+      evidence: `Field "${path}" is too large for regex evaluation (${val.length} > ${MAX_REGEX_TARGET_LENGTH})`,
+    };
+  }
+  if (isPotentiallyUnsafeRegex(pattern)) {
+    return {
+      name: "",
+      passed: false,
+      evidence: `Regex pattern /${pattern}/ rejected as potentially unsafe`,
     };
   }
   let re: RegExp;

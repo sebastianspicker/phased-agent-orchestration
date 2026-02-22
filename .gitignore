@@ -66,3 +66,23 @@ deprecated/
 _archive/
 .codex/skills-archive/
 .codex/ralph-audit/
+
+# Generated artifacts (non-contract outputs)
+/artifacts/
+/reports/
+
+# Release packaging / bundles (not source-controlled)
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+
+# Local temp / editor leftovers
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+*.swp
+*.swo

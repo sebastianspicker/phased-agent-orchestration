@@ -45,6 +45,36 @@
         "type": "object",
         "additionalProperties": false,
         "required": ["name", "type", "path"],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": { "const": "count-min" }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "required": ["value"],
+              "properties": {
+                "value": { "type": "integer", "minimum": 0 }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": { "const": "regex-match" }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "required": ["value"],
+              "properties": {
+                "value": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        ],
         "properties": {
           "name": {
             "type": "string",

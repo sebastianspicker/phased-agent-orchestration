@@ -29,6 +29,15 @@ describe("evaluateCriteria", () => {
       );
       expect(results[0].passed).toBe(false);
     });
+
+    it("does not resolve inherited prototype properties", () => {
+      const results = evaluateCriteria(
+        { summary: "ok" },
+        [{ name: "no-prototype", type: "field-exists", path: "constructor" }],
+      );
+      expect(results[0].passed).toBe(false);
+      expect(results[0].evidence).toContain("missing");
+    });
   });
 
   describe("field-empty", () => {
@@ -85,6 +94,26 @@ describe("evaluateCriteria", () => {
       );
       expect(results[0].passed).toBe(true);
     });
+
+    it("fails when count-min value is not a number", () => {
+      const results = evaluateCriteria(
+        { items: [1] },
+        [{ name: "min-items", type: "count-min", path: "items", value: "2" }],
+      );
+
+      expect(results[0].passed).toBe(false);
+      expect(results[0].evidence).toContain("non-negative integer");
+    });
+
+    it("fails when count-min value is negative", () => {
+      const results = evaluateCriteria(
+        { items: [1] },
+        [{ name: "min-items", type: "count-min", path: "items", value: -1 }],
+      );
+
+      expect(results[0].passed).toBe(false);
+      expect(results[0].evidence).toContain("non-negative integer");
+    });
   });
 
   describe("regex-match", () => {
@@ -121,6 +150,15 @@ describe("evaluateCriteria", () => {
       );
       expect(results[0].passed).toBe(false);
       expect(results[0].evidence).toContain("Invalid regex pattern");
+    });
+
+    it("rejects potentially unsafe regex patterns", () => {
+      const results = evaluateCriteria(
+        { version: "aaaaaaaaaaaaaaaaaaaaaaaaaaaa!" },
+        [{ name: "unsafe", type: "regex-match", path: "version", value: "^(a+)+$" }],
+      );
+      expect(results[0].passed).toBe(false);
+      expect(results[0].evidence).toContain("potentially unsafe");
     });
   });
 
