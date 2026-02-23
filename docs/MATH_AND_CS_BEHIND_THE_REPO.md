@@ -403,7 +403,7 @@ To evaluate whether phased orchestration helps in your environment, track:
 1. **Gate failure rate per phase**
 
 $$
-\hat{p}_{\text{fail}}(k)=\frac{\#\text{fails in phase }k}{\#\text{runs in phase }k}
+\hat{p}_{\text{fail}}(k)=\frac{\text{number of fails in phase }k}{\text{number of runs in phase }k}
 $$
 
 2. **Drift score trend**
@@ -417,6 +417,7 @@ $$
 $$
 \rho=\frac{\#\text{raw findings}}{\#\text{deduplicated findings}}
 $$
+
    High $\rho$ suggests large redundancy and thus high coordination noise.
 
 4. **Rework cost proxy**
