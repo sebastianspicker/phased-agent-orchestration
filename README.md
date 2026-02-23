@@ -9,6 +9,12 @@ The repository therefore shifted to a phased orchestration model with strict gat
 The system is built around one simple rule:
 **no stage can move forward until its output is validated.**
 
+> [!IMPORTANT]
+> Scientific evidence and formal rationale are documented in:
+> - [`docs/SCIENTIFIC_FOUNDATION.md`](docs/SCIENTIFIC_FOUNDATION.md)
+> - [`docs/MATH_AND_CS_BEHIND_THE_REPO.md`](docs/MATH_AND_CS_BEHIND_THE_REPO.md)
+> - [`docs/SCIENTIFIC_IMPLEMENTATION_MAP.md`](docs/SCIENTIFIC_IMPLEMENTATION_MAP.md)
+
 Each stage has a clear job, a typed artifact, and a gate. This prevents the usual failure mode where planning, coding, and auditing blur together.
 
 ## Why This Architecture Exists

@@ -65,10 +65,10 @@ The analysis sections below are intentionally retained as scientific rationale a
    availability). This directly connects to recent findings that orchestration
    can be overestimated and only helps under certain differentials.
 3. **Explicit context budgets + “context manifests”** per phase (what was
-   loaded, why, and how big). This is the operational bridge between your theory
+   loaded, why, and how big). This is the operational bridge between the theory
    (“context is noise”) and measurable engineering reality.
 4. **End-to-end traceability**: requirement → design constraint → plan task →
-   test case → implementation evidence → gate result. You have the right
+   test case → implementation evidence → gate result. The repo has the right
    building blocks; the missing piece is a _first-class linking mechanism_
    across artifacts.
 
@@ -97,7 +97,7 @@ with explicit “advance only if gate passes” semantics.
   adjudication where two independent claim sets are correlated and conflicts are
   resolved via a deterministic policy.
 
-### 1.4 Your README’s “why the old playground degraded” matches known failure modes
+### 1.4 The README’s “why the old playground degraded” matches known failure modes
 
 The repo explicitly states it evolved from a broader orchestration playground
 and became noisy as context grew and contributors multiplied (“signal-to-noise
@@ -115,7 +115,7 @@ when relevant info is near the beginning or end, and worse when it’s in the
 middle of long contexts.
 
 **Implication for this repo:**  
-Your “phase-scoped context” principle is _directionally correct_, but the **next
+The “phase-scoped context” principle is _directionally correct_, but the **next
 maturity step** is to (a) _measure_ and (b) _enforce_ context budgets and
 retrieval/ordering policies per phase.
 
@@ -126,8 +126,8 @@ evaluating long context understanding are lacking,” and it provides a multi-ta
 benchmark to evaluate long-context behavior.
 
 **Implication for this repo:**  
-To claim state-of-the-art alignment, you want a **repeatable evaluation
-harness** that includes long-context stress tests and measures whether your
+To claim state-of-the-art alignment, the repo needs a **repeatable evaluation
+harness** that includes long-context stress tests and measures whether the
 orchestration reduces failure probability _relative to baseline workflows_.
 
 ### 2.3 Multi-agent orchestration benefits are conditional, not automatic
@@ -138,7 +138,7 @@ is effective only if there are performance/cost differentials between agents
 under realistic constraints.
 
 **Implication for this repo:**  
-You should add an explicit _policy layer_ that decides **when to go
+The repo should add an explicit _policy layer_ that decides **when to go
 multi-agent** (and how many agents) based on budget + expected marginal value.
 
 ### 2.4 Evaluation & observability for MAS is becoming a first-class research area
@@ -158,7 +158,7 @@ a first-class **trace layer** to make behavior empirically inspectable and compa
 
 ### Gap A — Observability and trace standardization (P0)
 
-**What you have:**
+**What the repo has:**
 
 - `pipeline-state.template.json` tracks phases and completed gates.
 - `quality-gate` reports execution time and logs for that tool execution.
@@ -223,12 +223,12 @@ system-level signals.
 }
 ```
 
-This preserves your runner-agnostic philosophy: tier is required; `model_hint`,
+This preserves the runner-agnostic philosophy: tier is required; `model_hint`,
 `tokens_*`, `cost_*` are optional but strongly recommended.
 
 ### Gap B — Quantitative evaluation harness (P0)
 
-**What you have:**
+**What the repo has:**
 
 - The scientific doc already suggests metrics: pass/fail rates, drift trends,
   dedup ratio, time-to-closure.
@@ -266,7 +266,7 @@ Let:
 - $T_k$ = phase duration
 - $D$ = drift score between design and implementation
 
-You already define drift conceptually; formalize in evaluation:
+The repo already defines drift conceptually; formalize in evaluation:
 
 $$
 \mathrm{Drift}(D,X)=
@@ -274,7 +274,7 @@ $$
 {\sum_{c\in\mathcal{C}(D)} w_c}
 $$
 
-(Your scientific foundation uses this style of definition.)
+(The scientific foundation uses this style of definition.)
 
 Then track:
 
@@ -302,11 +302,11 @@ Why this matters (long-context + MAS research):
 
 ### Gap C — Explicit context budgets + “context manifest” (P1)
 
-**What you have:**
+**What the repo has:**
 
-- You state the principle and give the information-theoretic motivation: add
+- The repo states the principle and gives the information-theoretic motivation: add
   noise -> increase $H(C)$ without increasing $I(I;C)$.
-- Your pipeline config already encodes cognitive tiers per phase.
+- The pipeline config already encodes cognitive tiers per phase.
 
 **What was missing in the original baseline:**
 
@@ -329,10 +329,10 @@ context,” but enforce curated context selection and ordering.
   - `number-max` for `token_estimate <= budget`
 - Added runtime budget enforcement in `scripts/pipeline/runner.mjs` with shadow/enforce behavior via `context_budget_v1`.
 
-(You currently support `field-exists`, `field-empty`, `count-min`,
+(The repo currently supports `field-exists`, `field-empty`, `count-min`,
 `regex-match`.)
 
-Math justification (already in your foundation): you define attention weights:
+Math justification (already in the foundation): the repo defines attention weights:
 
 $$
 a_i = \frac{\exp(q\cdot k_i)}{\sum_{j=1}^{L}\exp(q\cdot k_j)}
@@ -348,7 +348,7 @@ optional—it is the mechanism that turns the theory into control.
 
 ### Gap D — Orchestration policy: when to use multiple agents and how many (P1)
 
-**What you have:**
+**What the repo has:**
 
 - Strong “coordination tax” modeling and the “star topology reduces edges from
   O(n²) to O(n)” rationale.
@@ -393,7 +393,7 @@ $$
 \mu C_{\text{coord}}(n) > 0
 $$
 
-Use your existing coordination model:
+Use the existing coordination model:
 
 $$
 C_{\text{coord}}(n)\approx \alpha\frac{n(n-1)}{2}
@@ -406,11 +406,11 @@ $$
 and explicitly prefer hub-and-spoke (lead + workers) because it scales linearly
 in edges.
 
-This ties your mathematical justification to a concrete control knob.
+This ties the mathematical justification to a concrete control knob.
 
 ### Gap E — End-to-end traceability across artifacts (P1)
 
-**What you have:**
+**What the repo has:**
 
 - The brief schema gives requirements IDs.
 - The plan schema exists and can list tests/verification.
@@ -423,7 +423,7 @@ This ties your mathematical justification to a concrete control knob.
 - tests reference `requirement_ids`
 - drift claims reference `requirement_ids` or `constraint_ids`
 
-Without this, you can’t compute:
+Without this, the repo can’t compute:
 
 - “coverage of MUST requirements by tests”
 - “coverage of constraints by drift checks”
@@ -449,7 +449,7 @@ preservation auditable, not just stated.
 
 (P2)
 
-**What you have:**
+**What the repo has:**
 
 - A heuristic drift detector that uses:
 - section heading presence checks,
@@ -461,7 +461,7 @@ preservation auditable, not just stated.
 **What was missing in the original baseline:**
 
 - Drift detection is only as good as claim extraction quality. Right now, claim
-  extraction is implied (external agents produce claims), but you don’t have:
+  extraction is implied (external agents produce claims), but the repo doesn’t have:
 - a standardized claim taxonomy,
 - an evaluation dataset,
 - measures of false positives / false negatives.
@@ -478,7 +478,7 @@ preservation auditable, not just stated.
   - default thresholds: `precision >= 0.75`, `recall >= 0.65`, `f1 >= 0.70`
 
 This aligns with the general trend in long-context benchmarking (LongBench) and
-MAS evaluation (MAESTRO): you need systematic tests, not anecdotes.
+MAS evaluation (MAESTRO): the repo needs systematic tests, not anecdotes.
 
 ---
 
@@ -508,9 +508,9 @@ P2 — “Improve measurement and robustness”
 ## 5) How to integrate MAESTRO-style ideas without losing runner-agnosticism
 
 MAESTRO’s key ideas (standardize config/execution; export traces + system
-signals) do not require you to adopt a specific agent framework.
+signals) do not require the repo to adopt a specific agent framework.
 
-A compatible approach for your repo:
+A compatible approach for the repo:
 
 - Define “adapter contracts” as data formats, not runtime dependencies:
 - artifact JSON schemas,
@@ -519,13 +519,13 @@ A compatible approach for your repo:
 - evaluation report schemas.
 - Then provide lightweight example adapters in `adapters/` (optional):
 - Cursor adapter already exists conceptually in `.cursor/skills/*`.
-- You can add more without changing core principles.
+- The repo can add more without changing core principles.
 
 ---
 
 ## 6) Why these next steps preserve the repo’s identity
 
-Your repo’s core stance is: reliability comes from institutional structure:
+The repo’s core stance is: reliability comes from institutional structure:
 
 - phase separation,
 - scoped context,
