@@ -39,6 +39,10 @@ jobs:
             skills/dev-tools/quality-gate/package-lock.json
             skills/dev-tools/multi-model-review/package-lock.json
             skills/dev-tools/trace-collector/package-lock.json
+      - name: Install ripgrep
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
       - name: Verify
         run: ./scripts/verify.sh
       - name: Pipeline smoke (phased_default)
