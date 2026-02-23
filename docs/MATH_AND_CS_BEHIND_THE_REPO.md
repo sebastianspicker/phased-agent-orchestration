@@ -33,11 +33,13 @@ Model a task as latent _intent_ $I$ (requirements, constraints, goals) that must
 A minimal information-theoretic lens:
 
 - **Entropy**:
+
 $$
 H(X) = -\sum_{x} p(x)\log p(x)
 $$
 
 - **Mutual information**:
+
 $$
 I(I;C) = H(I) - H(I \mid C)
 $$
@@ -142,16 +144,10 @@ This is exactly what the repository implements: artifact handoffs and gates repl
 
 Model agent collaboration as a graph $G=(V,E)$ where vertices are agents and edges are communication dependencies.
 
-- In a fully connected team of $n$ agents:
-$$
-|E_{\text{complete}}| = \binom{n}{2} = \frac{n(n-1)}{2}
-$$
+- In a fully connected team of $n$ agents: $|E_{\text{complete}}| = \binom{n}{2} = \frac{n(n-1)}{2}$
   This is the classic “channels of communication” model often discussed in software engineering coordination arguments (popularly associated with Brooks’ observations) [Brooks1975].
 
-- In a hub-and-spoke topology (one orchestrator + $n-1$ workers):
-$$
-|E_{\text{star}}| = n-1
-$$
+- In a hub-and-spoke topology (one orchestrator + $n-1$ workers): $|E_{\text{star}}| = n-1$
 
 So topology changes coordination complexity from $\Theta(n^2)$ to $\Theta(n)$.
 
@@ -164,6 +160,7 @@ S(n)=nb-\alpha\cdot \frac{n(n-1)}{2}
 $$
 
 Maximizing w.r.t $n$ (continuous approximation):
+
 $$
 \frac{dS}{dn}=b-\alpha\left(n-\frac12\right)=0
 \Rightarrow n^{*} \approx \frac{b}{\alpha}+\frac12
@@ -193,6 +190,7 @@ DbC’s rationale in software engineering is canonical (Meyer) [Meyer1992; Meyer
 ### 4.2 Phases as a Finite-State Machine With Hard Guards
 
 Let phases be states:
+
 $$
 \mathcal{S}=\{\texttt{arm},\texttt{design},\texttt{adversarial-review},\texttt{plan},\texttt{pmatch},\ldots\}
 $$
@@ -208,6 +206,7 @@ G_k(A_k)\in\{\text{pass},\text{fail},\text{warn}\}
 $$
 
 Transition rule:
+
 $$
 \text{advance from phase }k \iff G_k(A_k)=\text{pass}
 $$
@@ -229,6 +228,7 @@ Suppose phase $k$ introduces a defect with probability $p_k$.
 Suppose its gate detects defects with probability $d_k$.
 
 Then residual defect probability after gating:
+
 $$
 p_k^{\text{res}} = p_k(1-d_k)
 $$
@@ -246,6 +246,7 @@ Even modest $d_k$ (detection power) can drastically reduce risk because gating c
 Let the cost to fix a defect discovered after phase $k$ be $c_k$, typically increasing with time (later discovery is more expensive).
 
 Expected rework cost:
+
 $$
 \mathbb{E}[C] = \sum_{k=1}^{K} c_k \cdot P(\text{defect discovered at phase }k)
 $$
@@ -376,6 +377,7 @@ The `file_ownership` constraint is equivalent to enforcing a partition on a conf
 
 Let each task group $g$ own a set of files $F_g$.
 The schema enforces:
+
 $$
 F_g \cap F_h = \varnothing \quad \text{for } g\neq h
 $$
@@ -399,16 +401,19 @@ Where $Z$ is the phase context and $B$ is a tight budget. Here the artifact is a
 To evaluate whether phased orchestration helps in your environment, track:
 
 1. **Gate failure rate per phase**
+
 $$
 \hat{p}_{\text{fail}}(k)=\frac{\#\text{fails in phase }k}{\#\text{runs in phase }k}
 $$
 
 2. **Drift score trend**
+
 $$
 \mathrm{Drift}(S,T)\ \text{over time}
 $$
 
 3. **Review dedup ratio**
+
 $$
 \rho=\frac{\#\text{raw findings}}{\#\text{deduplicated findings}}
 $$

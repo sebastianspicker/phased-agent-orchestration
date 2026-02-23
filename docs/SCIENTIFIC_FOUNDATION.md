@@ -133,7 +133,7 @@ $$
 \text{Cost} \in \Theta(L^2)
 $$
 
-So increasing context length by factor $r$ can increase attention cost by ~$r^2$.
+So increasing context length by factor $r$ can increase attention cost by ~ $r^2$.
 
 **Implication:** Practical systems must optimize not just “what’s true” but “what’s worth loading.”
 
@@ -499,7 +499,7 @@ Based on the “judgment-centric” research direction, the repo can be extended
 
 5. **Formal “Coordination Topology” Documentation**
    - Add a short spec: when to use hub-and-spoke vs bounded group chat
-   - Include the explicit scaling law rationale (why $O(n)$ beats $O(n^2)$)
+   - Include the explicit scaling law rationale (why $O(n)$ beats $O(n^2)$ )
 
 ---
 
