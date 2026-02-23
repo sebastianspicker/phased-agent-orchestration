@@ -41,6 +41,7 @@ $$
 $$
 I(I;C) = H(I) - H(I \mid C)
 $$
+
 $$
 I(C;Y) = H(Y) - H(Y \mid C)
 $$
@@ -201,6 +202,7 @@ Each phase emits an artifact $A_k$. A gate $G_k$ validates it:
 $$
 A_k = f_k(A_{k-1}, C_k)
 $$
+
 $$
 G_k(A_k)\in\{\text{pass},\text{fail},\text{warn}\}
 $$

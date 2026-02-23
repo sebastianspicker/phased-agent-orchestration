@@ -191,7 +191,7 @@ $$
 
 Because humans and agents are fallible, and because each transformation is lossy.
 
-Drift can be formalized as a divergence between required constraints and realized constraints. If we define a set of constraints $ \mathcal{C}(D) $ extracted from design, then a drift score can be:
+Drift can be formalized as a divergence between required constraints and realized constraints. If we define a set of constraints $\mathcal{C}(D)$ extracted from design, then a drift score can be:
 
 $$
 \mathrm{Drift}(D, X) \;=\; \frac{\sum_{c \in \mathcal{C}(D)} w_c \cdot \mathbf{1}[\neg c(X)]}{\sum_{c \in \mathcal{C}(D)} w_c}
@@ -231,6 +231,7 @@ Each phase emits an artifact $A_k$. A gate $G_k$ decides whether it is valid.
 $$
 A_k = f_k(A_{k-1}, \text{scoped context})
 $$
+
 $$
 G_k(A_k) \in \{\text{pass}, \text{fail}\}
 $$
