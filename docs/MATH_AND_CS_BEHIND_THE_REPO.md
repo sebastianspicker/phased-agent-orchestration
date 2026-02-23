@@ -415,7 +415,7 @@ $$
 3. **Review dedup ratio**
 
 $$
-\rho=\frac{\#\text{raw findings}}{\#\text{deduplicated findings}}
+\rho=\frac{\text{number of raw findings}}{\text{number of deduplicated findings}}
 $$
 
    High $\rho$ suggests large redundancy and thus high coordination noise.
