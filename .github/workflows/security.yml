@@ -74,6 +74,7 @@ jobs:
           cache-dependency-path: |
             skills/dev-tools/quality-gate/package-lock.json
             skills/dev-tools/multi-model-review/package-lock.json
+            skills/dev-tools/trace-collector/package-lock.json
       - name: Audit quality-gate
         run: |
           cd skills/dev-tools/quality-gate
@@ -82,5 +83,10 @@ jobs:
       - name: Audit multi-model-review
         run: |
           cd skills/dev-tools/multi-model-review
+          npm ci
+          npm audit --audit-level=high
+      - name: Audit trace-collector
+        run: |
+          cd skills/dev-tools/trace-collector
           npm ci
           npm audit --audit-level=high

@@ -2,7 +2,10 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -17,7 +20,7 @@ defaults:
 
 jobs:
   verify:
-    name: Verify (skills)
+    name: Verify + Pipeline Smoke
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
@@ -35,5 +38,39 @@ jobs:
           cache-dependency-path: |
             skills/dev-tools/quality-gate/package-lock.json
             skills/dev-tools/multi-model-review/package-lock.json
+            skills/dev-tools/trace-collector/package-lock.json
       - name: Verify
         run: ./scripts/verify.sh
+      - name: Pipeline smoke (phased_default)
+        run: |
+          set -euo pipefail
+
+          init_output="$(bash scripts/pipeline-init.sh "$PWD")"
+          echo "$init_output"
+          run_id="$(echo "$init_output" | awk '/run_id:/ {print $2}')"
+          if [[ -z "${run_id}" ]]; then
+            echo "Failed to parse run_id from pipeline-init output" >&2
+            exit 1
+          fi
+
+          phases=(
+            arm
+            design
+            adversarial-review
+            plan
+            pmatch
+            build
+            quality-static
+            quality-tests
+            post-build
+            release-readiness
+          )
+
+          for phase in "${phases[@]}"; do
+            node scripts/pipeline/runner.mjs run-stage \
+              --run-id "$run_id" \
+              --phase "$phase" \
+              --config-id phased_default
+          done
+
+          node scripts/pipeline/runner.mjs summarize-run --run-id "$run_id"
