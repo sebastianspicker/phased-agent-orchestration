@@ -10,9 +10,18 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { resolveWithinRepo } from "../pipeline/lib/state.mjs";
 
 const TAXONOMY = ["interface", "invariant", "security", "performance", "docs"];
 const MODES = ["heuristic", "dual-extractor"];
+
+function parseRatioArg(name, value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0 || num > 1) {
+    throw new Error(`${name} must be a finite number between 0 and 1`);
+  }
+  return num;
+}
 
 function parseArgs(argv) {
   const args = {
@@ -25,11 +34,22 @@ function parseArgs(argv) {
 
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === "--root") args.root = argv[++i] ?? args.root;
-    else if (arg === "--output") args.output = argv[++i] ?? args.output;
-    else if (arg === "--precision-min") args.precisionMin = Number(argv[++i] ?? args.precisionMin);
-    else if (arg === "--recall-min") args.recallMin = Number(argv[++i] ?? args.recallMin);
-    else if (arg === "--f1-min") args.f1Min = Number(argv[++i] ?? args.f1Min);
+    const next = argv[i + 1];
+    const requireValue = (flag) => {
+      if (!next || next.startsWith("--")) {
+        throw new Error(`Missing value for ${flag}`);
+      }
+      i++;
+      return next;
+    };
+    if (arg === "--root") args.root = requireValue("--root");
+    else if (arg === "--output") args.output = requireValue("--output");
+    else if (arg === "--precision-min")
+      args.precisionMin = parseRatioArg("--precision-min", requireValue("--precision-min"));
+    else if (arg === "--recall-min")
+      args.recallMin = parseRatioArg("--recall-min", requireValue("--recall-min"));
+    else if (arg === "--f1-min")
+      args.f1Min = parseRatioArg("--f1-min", requireValue("--f1-min"));
     else throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -144,7 +164,7 @@ function main() {
   const args = parseArgs(process.argv);
   const repoRoot = resolve(args.root);
   const casesDir = resolve(repoRoot, "docs/eval/drift_goldset/cases");
-  const outPath = resolve(repoRoot, args.output);
+  const outPath = resolveWithinRepo(args.output, repoRoot);
   const workspaceTmpRoot = resolve(repoRoot, ".pipeline", "tmp");
 
   const thresholds = {
@@ -252,4 +272,11 @@ function main() {
   }
 }
 
-main();
+try {
+  main();
+} catch (error) {
+  const code = error?.code || "E_DRIFT_BENCHMARK";
+  const message = error instanceof Error ? error.message : String(error);
+  process.stderr.write(`${code}: ${message}\n`);
+  process.exit(1);
+}

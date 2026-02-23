@@ -12,8 +12,28 @@ function loadSchema(pathFromRepoRoot: string): Record<string, unknown> {
   return JSON.parse(readFileSync(fullPath, "utf8")) as Record<string, unknown>;
 }
 
+function registerFormats(ajv: Ajv): void {
+  ajv.addFormat("uri", {
+    type: "string",
+    validate: (value: string) => {
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  });
+
+  ajv.addFormat("date-time", {
+    type: "string",
+    validate: (value: string) => !Number.isNaN(Date.parse(value)),
+  });
+}
+
 function validateWithSchema(schema: Record<string, unknown>, data: unknown): { valid: boolean; errors: unknown[] } {
   const ajv = new Ajv({ allErrors: true, strict: false, validateSchema: false });
+  registerFormats(ajv);
   const validate = ajv.compile(schema);
   const valid = validate(data);
   return { valid, errors: validate.errors ?? [] };

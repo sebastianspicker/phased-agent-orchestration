@@ -11,6 +11,7 @@ import {
   parseBooleanFlag,
   phaseToArtifactKey,
   readJson,
+  resolveWithinDirectory,
   resolveWithinRepo,
   savePipelineState,
   toWorkspaceRelative,
@@ -60,6 +61,10 @@ const CONFIG_IDS = new Set([
   "phased_with_context_budgets",
   "phased_dual_extractor_drift",
 ]);
+const GATE_STATUS_SET = new Set(["pass", "warn", "fail"]);
+const GATE_FILE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.json$/;
+const PHASE_END_STATUS_SET = new Set(["ok", "error"]);
+const ARTIFACT_ACTION_SET = new Set(["read", "write"]);
 
 const DEFAULT_SCHEMA_BY_PHASE = {
   arm: "contracts/artifacts/brief.schema.json",
@@ -104,6 +109,12 @@ function requireOption(options, key) {
     throw badInput(`missing required option --${key}`);
   }
   return value;
+}
+
+function assertKnownPhase(phase, source = "phase") {
+  if (!PHASES.includes(phase)) {
+    throw badInput(`${source} must be one of: ${PHASES.join(", ")}`);
+  }
 }
 
 function toNumber(value, fallback) {
@@ -596,13 +607,43 @@ function gateStatusRank(status) {
   return 1;
 }
 
+function assertGateStatus(status, source = "status") {
+  if (!GATE_STATUS_SET.has(status)) {
+    throw badInput(`${source} must be one of: pass, warn, fail`);
+  }
+}
+
+function resolveGateOutputPath(runDir, gateFileName) {
+  if (typeof gateFileName !== "string" || gateFileName.length === 0) {
+    throw badInput("gate file name must be a non-empty string");
+  }
+  if (!GATE_FILE_PATTERN.test(gateFileName)) {
+    throw badInput(`invalid gate file name: ${gateFileName}`);
+  }
+  return resolveWithinDirectory(resolve(runDir, "gates"), gateFileName, {
+    baseLabel: "gates directory",
+  });
+}
+
 function worstStatus(...statuses) {
   return [...statuses]
     .filter(Boolean)
     .sort((a, b) => gateStatusRank(b) - gateStatusRank(a))[0] ?? "pass";
 }
 
-function emitGate({ runId, phase, gateId, status, artifactRef = "n/a", criteria = [], blockingFailures = [], metadata = {}, gateFileOverride }) {
+function emitGate({
+  runId,
+  phase,
+  gateId,
+  status,
+  artifactRef = "n/a",
+  criteria = [],
+  blockingFailures = [],
+  metadata = {},
+  gateFileOverride,
+  schemaValidation,
+}) {
+  assertGateStatus(status, "gate status");
   const gate = {
     gate_id: gateId,
     phase,
@@ -610,8 +651,8 @@ function emitGate({ runId, phase, gateId, status, artifactRef = "n/a", criteria 
     criteria,
     blocking_failures: blockingFailures,
     artifact_ref: artifactRef,
-    schema_validation: {
-      valid: status !== "fail" || blockingFailures.length > 0 ? true : true,
+    schema_validation: schemaValidation ?? {
+      valid: true,
       errors: [],
     },
     timestamp: nowIso(),
@@ -620,7 +661,8 @@ function emitGate({ runId, phase, gateId, status, artifactRef = "n/a", criteria 
 
   const runDir = getRunDir(runId);
   const gateFile = gateFileOverride || gateFileNameForPhase(phase);
-  writeJson(resolve(runDir, "gates", gateFile), gate);
+  const gatePath = resolveGateOutputPath(runDir, gateFile);
+  writeJson(gatePath, gate);
 
   appendTraceEvent(runId, {
     event: "gate_result",
@@ -683,7 +725,7 @@ function resolveArtifactRefForRun(runId, artifactRef) {
   if (artifactRef.startsWith("/")) {
     return resolveWithinRepo(artifactRef);
   }
-  return resolve(runDir, artifactRef);
+  return resolveWithinDirectory(runDir, artifactRef, { baseLabel: "run directory" });
 }
 
 function resolveOptionalArtifactRefForRun(runId, artifactRef) {
@@ -787,6 +829,7 @@ function evaluateContextBudgetGate({ runId, phase, artifact, artifactRef, schema
     artifactRef,
     criteria: gateResult.criteria,
     blockingFailures: mappedStatus === "fail" ? gateResult.blocking_failures : [],
+    schemaValidation: gateResult.schema_validation,
     metadata: {
       gate_type: "context_budget",
       mode: enforce ? "enforce" : "shadow",
@@ -882,6 +925,7 @@ function evaluateTraceabilityGate({ runId, phase, state }) {
     artifactRef: outcome.gate.artifact_ref,
     criteria: outcome.gate.criteria,
     blockingFailures: outcome.gate.status === "fail" ? outcome.gate.blocking_failures : [],
+    schemaValidation: outcome.gate.schema_validation,
     metadata: {
       gate_type: "traceability",
       mode: enforce ? "enforce" : "shadow",
@@ -957,6 +1001,7 @@ function gateStatusFromPhaseAndProfile(phase, stageProfile) {
 function runStartPhase(options) {
   const runId = requireOption(options, "run-id");
   const phase = requireOption(options, "phase");
+  assertKnownPhase(phase, "--phase");
 
   const state = loadPipelineState();
   ensureStateForRun(state, runId);
@@ -978,7 +1023,11 @@ function runStartPhase(options) {
 function runEndPhase(options) {
   const runId = requireOption(options, "run-id");
   const phase = requireOption(options, "phase");
+  assertKnownPhase(phase, "--phase");
   const status = options.status || "ok";
+  if (!PHASE_END_STATUS_SET.has(status)) {
+    throw badInput("--status must be one of: ok, error");
+  }
 
   appendTraceEvent(runId, {
     event: "phase_end",
@@ -992,8 +1041,13 @@ function runEndPhase(options) {
 function runRecordArtifact(options) {
   const runId = requireOption(options, "run-id");
   const phase = requireOption(options, "phase");
+  assertKnownPhase(phase, "--phase");
   const artifactRef = requireOption(options, "artifact-ref");
-  const action = options.action === "read" ? "artifact_read" : "artifact_write";
+  const requestedAction = options.action || "write";
+  if (!ARTIFACT_ACTION_SET.has(requestedAction)) {
+    throw badInput("--action must be one of: read, write");
+  }
+  const action = requestedAction === "read" ? "artifact_read" : "artifact_write";
 
   appendTraceEvent(runId, {
     event: action,
@@ -1008,7 +1062,9 @@ function runRecordArtifact(options) {
 function runRecordGate(options) {
   const runId = requireOption(options, "run-id");
   const phase = requireOption(options, "phase");
+  assertKnownPhase(phase, "--phase");
   const status = requireOption(options, "status");
+  assertGateStatus(status, "--status");
   const gateId = options["gate-id"] || `${phase}-gate`;
   const artifactRef = options["artifact-ref"] || "n/a";
 
@@ -1095,10 +1151,10 @@ function runStage(options) {
   let artifactRef = options["artifact-ref"] || defaults.artifactRef;
   const schemaRef = options["schema-ref"] || defaults.schemaRef;
   let artifact = null;
+  let wroteArtifact = false;
 
   if (artifactRef) {
-    const runDir = getRunDir(runId);
-    const artifactAbs = resolve(runDir, artifactRef);
+    const artifactAbs = resolveArtifactRefForRun(runId, artifactRef);
 
     if (options["input-artifact"]) {
       const inputAbs = resolveWithinRepo(options["input-artifact"]);
@@ -1110,6 +1166,7 @@ function runStage(options) {
       });
       artifact = JSON.parse(readFileSync(inputAbs, "utf8"));
       writeJson(artifactAbs, artifact);
+      wroteArtifact = true;
     } else {
       artifact = buildArtifactForPhase({
         phase,
@@ -1122,6 +1179,7 @@ function runStage(options) {
       });
       if (artifact) {
         writeJson(artifactAbs, artifact);
+        wroteArtifact = true;
       } else if (existsSync(artifactAbs)) {
         appendTraceEvent(runId, {
           event: "artifact_read",
@@ -1133,12 +1191,14 @@ function runStage(options) {
       }
     }
 
-    appendTraceEvent(runId, {
-      event: "artifact_write",
-      phase,
-      artifact_ref: toWorkspaceRelative(artifactAbs),
-      status: "ok",
-    });
+    if (wroteArtifact) {
+      appendTraceEvent(runId, {
+        event: "artifact_write",
+        phase,
+        artifact_ref: toWorkspaceRelative(artifactAbs),
+        status: "ok",
+      });
+    }
 
     artifactRef = toWorkspaceRelative(artifactAbs);
     if (artifact) {
@@ -1193,6 +1253,7 @@ function runStage(options) {
       artifactRef: artifactRef || gate.artifact_ref,
       criteria: gate.criteria,
       blockingFailures: stageStatus === "fail" ? gate.blocking_failures : [],
+      schemaValidation: gate.schema_validation,
       metadata: {
         gate_type: "phase",
         schema_ref: schemaRef,

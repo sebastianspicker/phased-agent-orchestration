@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import {
+  getRunDir,
+  resolveWithinRepo,
+  toWorkspaceRelative,
+} from "../pipeline/lib/state.mjs";
 
 const CONFIG_IDS = [
   "baseline_single_agent",
@@ -19,9 +24,18 @@ function parseArgs(argv) {
   const args = { matrix: null, output: null, root: process.cwd() };
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === "--matrix") args.matrix = argv[++i];
-    else if (arg === "--output") args.output = argv[++i];
-    else if (arg === "--root") args.root = argv[++i];
+    const next = argv[i + 1];
+    const requireValue = (flag) => {
+      if (!next || next.startsWith("--")) {
+        throw new Error(`Missing value for ${flag}`);
+      }
+      i++;
+      return next;
+    };
+    if (arg === "--matrix") args.matrix = requireValue("--matrix");
+    else if (arg === "--output") args.output = requireValue("--output");
+    else if (arg === "--root") args.root = requireValue("--root");
+    else throw new Error(`Unknown argument: ${arg}`);
   }
   if (!args.matrix || !args.output) {
     throw new Error("Usage: aggregate.mjs --matrix <matrix.json> --output <evaluation-report.json> [--root <repo>] ");
@@ -68,7 +82,10 @@ function gatePassRate(gates) {
 }
 
 function loadRunMetrics(root, runId) {
-  const runDir = resolve(root, ".pipeline", "runs", runId);
+  const runDir = getRunDir(runId, root);
+  if (!existsSync(runDir)) {
+    throw new Error(`run directory not found for run_id=${runId}`);
+  }
   const gatesDir = resolve(runDir, "gates");
   const traceSummary = readJson(resolve(runDir, "trace.summary.json"), {});
   const drift = readJson(resolve(runDir, "drift-reports", "pmatch.json"), {});
@@ -174,9 +191,10 @@ function normalizeConfigurations(raw) {
 
 function main() {
   const { matrix, output, root } = parseArgs(process.argv);
-  const matrixData = readJson(resolve(root, matrix));
+  const matrixPath = resolveWithinRepo(matrix, root);
+  const matrixData = readJson(matrixPath);
   if (!matrixData) {
-    throw new Error(`Matrix file not found: ${matrix}`);
+    throw new Error(`Matrix file not found: ${toWorkspaceRelative(matrixPath, root)}`);
   }
 
   const configurations = normalizeConfigurations(matrixData.configurations ?? []).map((config) => {
@@ -196,10 +214,17 @@ function main() {
     metrics: aggregateMetrics(configurations),
   };
 
-  const outPath = resolve(root, output);
+  const outPath = resolveWithinRepo(output, root);
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   process.stdout.write(`${outPath}\n`);
 }
 
-main();
+try {
+  main();
+} catch (error) {
+  const code = error?.code || "E_EVAL_AGGREGATE";
+  const message = error instanceof Error ? error.message : String(error);
+  process.stderr.write(`${code}: ${message}\n`);
+  process.exit(1);
+}

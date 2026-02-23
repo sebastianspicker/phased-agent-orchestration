@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { collectTrace } from "../../src/lib/trace.js";
@@ -123,5 +123,123 @@ describe("collectTrace", () => {
     );
 
     rmSync(workspaceRoot, { recursive: true, force: true });
+  });
+
+  it("rejects trace_path symlinks that resolve outside workspaceRoot", async () => {
+    const workspaceRoot = mkdtempSync(join(tmpdir(), "trace-collector-symlink-trace-"));
+    const schemaDir = join(workspaceRoot, "contracts", "artifacts");
+    mkdirSync(schemaDir, { recursive: true });
+    writeFileSync(
+      join(schemaDir, "execution-trace.schema.json"),
+      JSON.stringify({
+        $schema: "https://json-schema.org/draft/2020-12/schema",
+        type: "object",
+        required: ["ts", "run_id", "event", "phase"],
+        properties: {
+          ts: { type: "string" },
+          run_id: { type: "string" },
+          event: { type: "string" },
+          phase: { type: "string" },
+        },
+      }),
+      "utf8",
+    );
+
+    const outsideRoot = mkdtempSync(join(tmpdir(), "trace-collector-outside-trace-"));
+    const outsideTrace = join(outsideRoot, "trace.jsonl");
+    writeFileSync(
+      outsideTrace,
+      JSON.stringify({
+        ts: "2026-02-22T12:00:00Z",
+        run_id: "run-3",
+        event: "phase_start",
+        phase: "arm",
+      }),
+      "utf8",
+    );
+
+    const symlinkPath = join(workspaceRoot, "trace-link.jsonl");
+    try {
+      symlinkSync(outsideTrace, symlinkPath);
+    } catch (err: unknown) {
+      const e = err as { code?: string };
+      if (e.code === "EPERM") {
+        rmSync(workspaceRoot, { recursive: true, force: true });
+        rmSync(outsideRoot, { recursive: true, force: true });
+        return;
+      }
+      throw err;
+    }
+
+    await expect(
+      collectTrace(
+        {
+          run_id: "run-3",
+          trace_path: "trace-link.jsonl",
+          schema_ref: "contracts/artifacts/execution-trace.schema.json",
+        },
+        [],
+        { workspaceRoot },
+      ),
+    ).rejects.toThrow("Path must resolve within workspace root");
+
+    rmSync(workspaceRoot, { recursive: true, force: true });
+    rmSync(outsideRoot, { recursive: true, force: true });
+  });
+
+  it("rejects schema_ref symlinks that resolve outside workspaceRoot", async () => {
+    const workspaceRoot = mkdtempSync(join(tmpdir(), "trace-collector-symlink-schema-"));
+    const traceDir = join(workspaceRoot, ".pipeline", "runs", "run-4");
+    mkdirSync(traceDir, { recursive: true });
+    writeFileSync(
+      join(traceDir, "trace.jsonl"),
+      JSON.stringify({
+        ts: "2026-02-22T12:00:00Z",
+        run_id: "run-4",
+        event: "phase_start",
+        phase: "arm",
+      }),
+      "utf8",
+    );
+
+    const outsideRoot = mkdtempSync(join(tmpdir(), "trace-collector-outside-schema-"));
+    const outsideSchema = join(outsideRoot, "execution-trace.schema.json");
+    writeFileSync(
+      outsideSchema,
+      JSON.stringify({
+        type: "object",
+      }),
+      "utf8",
+    );
+
+    const contractsDir = join(workspaceRoot, "contracts", "artifacts");
+    mkdirSync(contractsDir, { recursive: true });
+    const symlinkSchema = join(contractsDir, "execution-trace.schema.json");
+    try {
+      symlinkSync(outsideSchema, symlinkSchema);
+    } catch (err: unknown) {
+      const e = err as { code?: string };
+      if (e.code === "EPERM") {
+        rmSync(workspaceRoot, { recursive: true, force: true });
+        rmSync(outsideRoot, { recursive: true, force: true });
+        return;
+      }
+      throw err;
+    }
+
+    await expect(
+      collectTrace(
+        {
+          run_id: "run-4",
+          trace_path: ".pipeline/runs/run-4/trace.jsonl",
+          schema_ref: "contracts/artifacts/execution-trace.schema.json",
+        },
+        [],
+        { workspaceRoot },
+      ),
+    ).rejects.toThrow("Path must resolve within workspace root");
+
+    rmSync(workspaceRoot, { recursive: true, force: true });
+    rmSync(outsideRoot, { recursive: true, force: true });
   });
 });

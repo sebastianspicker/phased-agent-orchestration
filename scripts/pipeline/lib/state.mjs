@@ -3,6 +3,7 @@ import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const RUN_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
 function badInput(message) {
   const err = new Error(message);
@@ -25,6 +26,11 @@ export function getPipelineStatePath(root = repoRoot) {
 export function getRunDir(runId, root = repoRoot) {
   if (!runId || typeof runId !== "string") {
     throw badInput("run_id is required");
+  }
+  if (!RUN_ID_PATTERN.test(runId)) {
+    throw badInput(
+      "run_id must match ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ and must not contain path separators",
+    );
   }
   return resolve(getPipelineDir(root), "runs", runId);
 }
@@ -62,28 +68,80 @@ export function savePipelineState(state, root = repoRoot) {
   writeJson(getPipelineStatePath(root), state);
 }
 
-export function resolveWithinRepo(pathRef, root = repoRoot) {
+function assertPathWithinBase(resolvedPath, baseReal, pathRef, allowBase = false, baseLabel = "base directory") {
+  const rel = relative(baseReal, resolvedPath);
+  if (rel.startsWith("..") || isAbsolute(rel) || (!allowBase && rel.length === 0)) {
+    if (!allowBase && rel.length === 0) {
+      throw badInput(`path reference must not point to ${baseLabel}`);
+    }
+    throw badInput(`path escapes ${baseLabel}: ${pathRef}`);
+  }
+}
+
+function findNearestExistingAncestor(pathValue) {
+  let current = resolve(pathValue);
+  while (!existsSync(current)) {
+    const parent = dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+  return current;
+}
+
+function resolveWithinBase(pathRef, baseDir, options = {}) {
   if (!pathRef || typeof pathRef !== "string") {
     throw badInput("path reference must be a non-empty string");
   }
 
-  const rootReal = realpathSync(root);
-  const resolved = isAbsolute(pathRef) ? resolve(pathRef) : resolve(rootReal, pathRef);
-  const rel = relative(rootReal, resolved);
-  if (rel.startsWith("..") || rel === "") {
-    if (rel === "") {
-      throw badInput("path reference must not point to repository root");
-    }
-    throw badInput(`path escapes repository root: ${pathRef}`);
+  const allowAbsolute = options.allowAbsolute === true;
+  const allowBase = options.allowBase === true;
+  const baseLabel = options.baseLabel || "base directory";
+  if (isAbsolute(pathRef) && !allowAbsolute) {
+    throw badInput("path reference must be relative");
   }
+
+  const baseReal = realpathSync(baseDir);
+  const resolved = isAbsolute(pathRef) ? resolve(pathRef) : resolve(baseReal, pathRef);
+  assertPathWithinBase(resolved, baseReal, pathRef, allowBase, baseLabel);
+
+  const nearestExisting = findNearestExistingAncestor(resolved);
+  const nearestReal = realpathSync(nearestExisting);
+  // The nearest existing ancestor can legitimately be the base directory itself
+  // when resolving a new file path under baseDir.
+  assertPathWithinBase(nearestReal, baseReal, pathRef, true, baseLabel);
+
+  if (existsSync(resolved)) {
+    const resolvedReal = realpathSync(resolved);
+    assertPathWithinBase(resolvedReal, baseReal, pathRef, allowBase, baseLabel);
+    return resolvedReal;
+  }
+
   return resolved;
+}
+
+export function resolveWithinRepo(pathRef, root = repoRoot) {
+  return resolveWithinBase(pathRef, root, {
+    allowAbsolute: true,
+    allowBase: false,
+    baseLabel: "repository root",
+  });
+}
+
+export function resolveWithinDirectory(baseDir, pathRef, options = {}) {
+  return resolveWithinBase(pathRef, baseDir, {
+    allowAbsolute: options.allowAbsolute === true,
+    allowBase: options.allowBase === true,
+    baseLabel: options.baseLabel || "base directory",
+  });
 }
 
 export function toWorkspaceRelative(absPath, root = repoRoot) {
   const rootReal = realpathSync(root);
-  const resolved = resolve(absPath);
+  const resolved = existsSync(absPath) ? realpathSync(absPath) : resolve(absPath);
   const rel = relative(rootReal, resolved);
-  if (rel.startsWith("..") || rel.length === 0) {
+  if (rel.startsWith("..") || isAbsolute(rel) || rel.length === 0) {
     throw badInput(`path is outside repository root: ${absPath}`);
   }
   return rel;

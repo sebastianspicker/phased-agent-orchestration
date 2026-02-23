@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { getRunDir, resolveWithinRepo } from "../pipeline/lib/state.mjs";
 
 type ConfigurationId =
   | "baseline_single_agent"
@@ -64,9 +65,18 @@ function parseArgs(argv: string[]) {
   };
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === "--matrix") args.matrix = argv[++i] ?? null;
-    else if (arg === "--output") args.output = argv[++i] ?? null;
-    else if (arg === "--root") args.root = argv[++i] ?? process.cwd();
+    const next = argv[i + 1];
+    const requireValue = (flag: string): string => {
+      if (!next || next.startsWith("--")) {
+        throw new Error(`Missing value for ${flag}`);
+      }
+      i++;
+      return next;
+    };
+    if (arg === "--matrix") args.matrix = requireValue("--matrix");
+    else if (arg === "--output") args.output = requireValue("--output");
+    else if (arg === "--root") args.root = requireValue("--root");
+    else throw new Error(`Unknown argument: ${arg}`);
   }
   if (!args.matrix || !args.output) {
     throw new Error("Usage: aggregate.ts --matrix <matrix.json> --output <evaluation-report.json> [--root <repo>]");
@@ -75,7 +85,10 @@ function parseArgs(argv: string[]) {
 }
 
 function loadRunMetrics(root: string, runId: string) {
-  const runDir = resolve(root, ".pipeline", "runs", runId);
+  const runDir = getRunDir(runId, root);
+  if (!existsSync(runDir)) {
+    throw new Error(`run directory not found for run_id=${runId}`);
+  }
   const traceSummary = readJson<Record<string, unknown>>(resolve(runDir, "trace.summary.json"), {});
   const drift = readJson<Record<string, unknown>>(resolve(runDir, "drift-reports", "pmatch.json"), {});
   const review = readJson<Record<string, unknown>>(resolve(runDir, "review.json"), {});
@@ -189,7 +202,8 @@ function aggregate(configurations: Array<{ id: ConfigurationId; runs: ReturnType
 
 function main() {
   const args = parseArgs(process.argv);
-  const matrix = readJson<MatrixInput>(resolve(args.root, args.matrix!), {
+  const matrixPath = resolveWithinRepo(args.matrix!, args.root);
+  const matrix = readJson<MatrixInput>(matrixPath, {
     evaluation_id: "",
     taskset_id: "",
     configurations: [],
@@ -214,7 +228,7 @@ function main() {
     metrics: aggregate(configs),
   };
 
-  const outputPath = resolve(args.root, args.output!);
+  const outputPath = resolveWithinRepo(args.output!, args.root);
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   process.stdout.write(`${outputPath}\n`);

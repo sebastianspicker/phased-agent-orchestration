@@ -40,6 +40,18 @@ function resolveWithinRoot(workspaceRoot: string, ref: string): string {
   if (relative.startsWith("..") || path.isAbsolute(relative)) {
     throw badInput("Path must resolve within workspace root");
   }
+  try {
+    const resolvedReal = realpathSync(resolved);
+    const resolvedRel = path.relative(root, resolvedReal);
+    if (resolvedRel.startsWith("..") || path.isAbsolute(resolvedRel)) {
+      throw badInput("Path must resolve within workspace root");
+    }
+  } catch (err: unknown) {
+    const e = err as { code?: string };
+    if (e.code !== "ENOENT") {
+      throw err;
+    }
+  }
   return resolved;
 }
 

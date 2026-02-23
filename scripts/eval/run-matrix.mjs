@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { validateTasksetSchema } from "./lib/taskset-validate.mjs";
+import { getRunDir, resolveWithinRepo, toWorkspaceRelative } from "../pipeline/lib/state.mjs";
 
 const CONFIG_IDS = [
   "baseline_single_agent",
@@ -24,6 +25,7 @@ const PHASE_ORDER = [
   "post-build",
   "release-readiness",
 ];
+const EVAL_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
 function parseArgs(argv) {
   const args = {
@@ -36,11 +38,19 @@ function parseArgs(argv) {
 
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === "--root") args.root = argv[++i] ?? args.root;
-    else if (arg === "--eval-id") args.evalId = argv[++i] ?? args.evalId;
-    else if (arg === "--taskset") args.taskset = argv[++i] ?? args.taskset;
-    else if (arg === "--repeats") args.repeats = Number(argv[++i] ?? args.repeats);
-    else if (arg === "--mode") args.mode = argv[++i] ?? args.mode;
+    const next = argv[i + 1];
+    const requireValue = (flag) => {
+      if (!next || next.startsWith("--")) {
+        throw new Error(`Missing value for ${flag}`);
+      }
+      i++;
+      return next;
+    };
+    if (arg === "--root") args.root = requireValue("--root");
+    else if (arg === "--eval-id") args.evalId = requireValue("--eval-id");
+    else if (arg === "--taskset") args.taskset = requireValue("--taskset");
+    else if (arg === "--repeats") args.repeats = Number(requireValue("--repeats"));
+    else if (arg === "--mode") args.mode = requireValue("--mode");
     else throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -49,6 +59,9 @@ function parseArgs(argv) {
   }
   if (!Number.isInteger(args.repeats) || args.repeats < 1) {
     throw new Error("--repeats must be an integer >= 1");
+  }
+  if (!EVAL_ID_PATTERN.test(args.evalId)) {
+    throw new Error("--eval-id must match ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$");
   }
 
   return args;
@@ -82,12 +95,17 @@ function runCommand(cmd, args, { cwd, env, input, allowFailure = false } = {}) {
   return proc;
 }
 
-function parseRunId(initOutput) {
+function parseRunId(initOutput, root) {
   const match = initOutput.match(/run_id:\s+([^\s]+)/);
   if (!match) {
     throw new Error(`Could not parse run_id from pipeline-init output:\n${initOutput}`);
   }
-  return match[1];
+  const runId = match[1];
+  const runDir = getRunDir(runId, root);
+  if (!existsSync(runDir)) {
+    throw new Error(`pipeline-init returned run_id without run directory: ${runId}`);
+  }
+  return runId;
 }
 
 function validateStageOverrideMap(stageMap, contextLabel) {
@@ -151,7 +169,7 @@ function validateTaskset(taskset) {
 }
 
 function loadTaskset(root, tasksetRef) {
-  const abs = resolve(root, tasksetRef);
+  const abs = resolveWithinRepo(tasksetRef, root);
   if (!existsSync(abs)) {
     throw new Error(`Taskset not found: ${tasksetRef}`);
   }
@@ -162,7 +180,7 @@ function loadTaskset(root, tasksetRef) {
     taskset,
   });
   validateTaskset(taskset);
-  return { abs, rel: tasksetRef, taskset };
+  return { abs, rel: toWorkspaceRelative(abs, root), taskset };
 }
 
 function applyConfigToPipelineState(root, configId, mode) {
@@ -248,7 +266,7 @@ function main() {
     for (let repeat = 1; repeat <= args.repeats; repeat++) {
       for (const task of taskset.tasks) {
         const init = runCommand("bash", ["scripts/pipeline-init.sh", root], { cwd: root });
-        const runId = parseRunId(init.stdout || "");
+        const runId = parseRunId(init.stdout || "", root);
 
         applyConfigToPipelineState(root, configId, args.mode);
 
@@ -300,7 +318,22 @@ function main() {
     { cwd: root },
   );
 
-  process.stdout.write(`${JSON.stringify({ matrix_path: matrixPath, report_path: reportPath }, null, 2)}\n`);
+  const failedRuns = runMeta.filter((entry) => entry.failed);
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        matrix_path: matrixPath,
+        report_path: reportPath,
+        total_runs: runMeta.length,
+        failed_runs: failedRuns.length,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  if (failedRuns.length > 0) {
+    process.exitCode = 1;
+  }
 }
 
 try {
