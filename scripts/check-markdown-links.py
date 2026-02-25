@@ -63,9 +63,12 @@ def _slugify(text: str) -> str:
 @lru_cache(maxsize=512)
 def _anchors_for_file(path: Path) -> set[str]:
     anchors: set[str] = set()
-    if not path.exists():
+    if not path.exists() or not path.is_file():
         return anchors
-    text = _strip_code_fences(_read_text(path))
+    try:
+        text = _strip_code_fences(_read_text(path))
+    except OSError:
+        return anchors
     for line in text.splitlines():
         match = HEADING_RE.match(line)
         if not match:
@@ -129,6 +132,8 @@ def _validate_target(
         return f"missing target: {target}"
 
     if strict and anchor:
+        if not dest.is_file():
+            return f"anchor '#{anchor}' points to non-file target: {target}"
         anchors = _anchors_for_file(dest)
         if anchor not in anchors:
             return f"missing anchor '#{anchor}' in {dest.relative_to(root)}"
@@ -210,4 +215,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

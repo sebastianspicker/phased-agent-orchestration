@@ -15,6 +15,7 @@ import { parseArgs as parseCliArgs } from "../lib/argv.mjs";
 
 const TAXONOMY = ["interface", "invariant", "security", "performance", "docs"];
 const MODES = ["heuristic", "dual-extractor"];
+const FIXTURE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
 function parseRatioArg(name, value) {
   const num = Number(value);
@@ -126,11 +127,20 @@ function runSkill(repoRoot, fixture, targetRef, mode) {
     },
   });
 
+  const rawOut = result.stdout || result.stderr;
+  if (!rawOut) {
+    throw new Error("drift-detect returned empty output");
+  }
   if (result.status !== 0) {
     throw new Error(result.stderr || result.stdout || "drift-detect failed");
   }
 
-  const parsed = JSON.parse(result.stdout);
+  let parsed;
+  try {
+    parsed = JSON.parse(result.stdout);
+  } catch (error) {
+    throw new Error(`drift-detect returned invalid JSON: ${String(error)}`);
+  }
   if (!parsed.success) {
     throw new Error(parsed.error?.message || "drift-detect failed");
   }
@@ -160,6 +170,23 @@ function thresholdFailed(metric, thresholds) {
     metric.recall < thresholds.recall ||
     metric.f1 < thresholds.f1
   );
+}
+
+function validateFixtureShape(fixture, fileName) {
+  if (!fixture || typeof fixture !== "object" || Array.isArray(fixture)) {
+    throw new Error(`fixture ${fileName} must be an object`);
+  }
+  if (typeof fixture.id !== "string" || !FIXTURE_ID_PATTERN.test(fixture.id)) {
+    throw new Error(
+      `fixture ${fileName} has invalid id: must match ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`,
+    );
+  }
+  if (typeof fixture.source !== "string" || fixture.source.length === 0) {
+    throw new Error(`fixture ${fixture.id} is missing non-empty source`);
+  }
+  if (typeof fixture.target !== "string" || fixture.target.length === 0) {
+    throw new Error(`fixture ${fixture.id} is missing non-empty target`);
+  }
 }
 
 function main() {
@@ -196,6 +223,7 @@ function main() {
     for (const file of files) {
       const fixturePath = resolve(casesDir, file);
       const fixture = JSON.parse(readFileSync(fixturePath, "utf8"));
+      validateFixtureShape(fixture, file);
       const targetPath = join(tmpDir, `${fixture.id}.target.md`);
       writeFileSync(targetPath, fixture.target, "utf8");
       const targetRef = relative(repoRoot, targetPath);
