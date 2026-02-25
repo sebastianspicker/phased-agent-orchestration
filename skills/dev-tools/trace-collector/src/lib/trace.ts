@@ -1,5 +1,5 @@
-import { readFileSync, realpathSync } from "node:fs";
-import path from "node:path";
+import { readFileSync } from "node:fs";
+import { resolveWithinWorkspace } from "@coding-agents-space/shared";
 import type { Input, TraceEvent, TraceResult, TraceSummary } from "../types.js";
 
 interface TraceOptions {
@@ -25,35 +25,6 @@ type AjvFormatsFn = (ajv: AjvInstance, formats?: string[]) => void;
 
 let _AjvClass: AjvConstructor | undefined;
 let _addFormats: AjvFormatsFn | undefined;
-
-function badInput(message: string): Error {
-  return Object.assign(new Error(message), { code: "E_BAD_INPUT" });
-}
-
-function resolveWithinRoot(workspaceRoot: string, ref: string): string {
-  if (path.isAbsolute(ref)) {
-    throw badInput("Path must resolve within workspace root");
-  }
-  const root = realpathSync(path.resolve(workspaceRoot));
-  const resolved = path.resolve(root, ref);
-  const relative = path.relative(root, resolved);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) {
-    throw badInput("Path must resolve within workspace root");
-  }
-  try {
-    const resolvedReal = realpathSync(resolved);
-    const resolvedRel = path.relative(root, resolvedReal);
-    if (resolvedRel.startsWith("..") || path.isAbsolute(resolvedRel)) {
-      throw badInput("Path must resolve within workspace root");
-    }
-  } catch (err: unknown) {
-    const e = err as { code?: string };
-    if (e.code !== "ENOENT") {
-      throw err;
-    }
-  }
-  return resolved;
-}
 
 async function getAjv(): Promise<AjvConstructor> {
   if (_AjvClass) return _AjvClass;
@@ -174,12 +145,16 @@ export async function collectTrace(
 ): Promise<TraceResult> {
   const workspaceRoot = opts.workspaceRoot ?? "/workspace";
   const schemaRef = input.schema_ref ?? "contracts/artifacts/execution-trace.schema.json";
-  const schemaPath = resolveWithinRoot(workspaceRoot, schemaRef);
+  const schemaPath = resolveWithinWorkspace(workspaceRoot, schemaRef, "Path", {
+    rootLabel: "workspace root",
+  });
   const schema = JSON.parse(readFileSync(schemaPath, "utf8")) as Record<string, unknown>;
 
   let events: TraceEvent[];
   if (input.trace_path) {
-    const tracePath = resolveWithinRoot(workspaceRoot, input.trace_path);
+    const tracePath = resolveWithinWorkspace(workspaceRoot, input.trace_path, "Path", {
+      rootLabel: "workspace root",
+    });
     logs.push(`Loaded trace events from ${tracePath}`);
     events = readJsonlEvents(tracePath);
   } else {

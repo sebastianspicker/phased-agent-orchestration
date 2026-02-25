@@ -40,10 +40,12 @@ function parseSections(text: string): Section[] {
   for (const line of lines) {
     const headingMatch = line.match(/^#{1,6}\s+(.+)/);
     if (headingMatch) {
+      const heading = headingMatch[1];
+      if (!heading) continue;
       if (current) sections.push(current);
-      current = { heading: headingMatch[1]!.trim(), body: "" };
+      current = { heading: heading.trim(), body: "" };
     } else if (current) {
-      current.body += line + "\n";
+      current.body += `${line}\n`;
     } else {
       preambleLines.push(line);
     }
@@ -67,7 +69,9 @@ function extractNormalizedHeadings(text: string): Set<string> {
   for (const line of text.split("\n")) {
     const headingMatch = line.match(/^#{1,6}\s+(.+)/);
     if (!headingMatch) continue;
-    headings.add(normalize(headingMatch[1]!.trim()));
+    const heading = headingMatch[1];
+    if (!heading) continue;
+    headings.add(normalize(heading.trim()));
   }
   return headings;
 }
@@ -216,7 +220,8 @@ function correlateClaims(
     let bestScore = 0;
     for (let idx = 0; idx < second.claims.length; idx++) {
       if (usedSecond.has(idx)) continue;
-      const right = second.claims[idx]!;
+      const right = second.claims[idx];
+      if (!right) continue;
       const score = left.id === right.id ? 1 : tokenSimilarity(left.claim, right.claim);
       if (score > bestScore) {
         bestScore = score;
@@ -366,8 +371,12 @@ export function detectDriftFromExtractorClaims(
     });
   }
 
-  const first = extractorClaimSets[0]!;
-  const second = extractorClaimSets[1]!;
+  const [first, second] = extractorClaimSets;
+  if (!first || !second) {
+    throw Object.assign(new Error("dual-extractor mode requires exactly 2 extractor_claim_sets"), {
+      code: "E_BAD_INPUT",
+    });
+  }
   const { pairs, unmatchedSecond } = correlateClaims(first, second);
   const claims: DriftClaim[] = [];
   let conflictsResolved = 0;

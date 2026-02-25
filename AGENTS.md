@@ -1,14 +1,18 @@
 # AGENTS
 
 This repo implements a phased AI orchestration pipeline with two layers:
-- **Orchestration playbook** (agent guidance under `.codex/skills/orchestration/`).
+- **Orchestration adapters** (agent guidance under `adapters/<runner>/skills/`).
 - **Runtime skills** (Node packages under `skills/dev-tools/*`).
 
 ## Repo map
-- `.codex/skills/orchestration/SKILL.md` — core pipeline playbook (15 configurations: Intake/arm, Design Synthesis/design, Adversarial Challenge/adversarial-review, Execution Blueprint/plan, Drift Match/pmatch, Coordinated Build/build, quality-static, quality-tests, denoise, quality-frontend, quality-backend, quality-docs, security-review, release-readiness, pipeline).
-- `.cursor/skills/orchestration-*/` — 11 Cursor phase adapter skills (Intake, Design Synthesis, Adversarial Challenge, Execution Blueprint, Drift Match, Coordinated Build, quality-static, quality-tests, post-build, release-readiness, pipeline).
-- `contracts/artifacts/` — artifact schemas (brief, design-document, review-report, execution-plan, drift-report, quality-report, release-readiness).
-- `contracts/artifacts/` — artifact schemas (brief, design-document, review-report, execution-plan, drift-report, quality-report, release-readiness, execution-trace, evaluation-report).
+- `adapters/spec/adapter-manifest.json` — source-of-truth for supported runners, stage order, stage adapter paths, and expected gate references.
+- `adapters/templates/` — canonical templates for runner adapter files and root runner entry docs.
+- `adapters/<runner>/skills/orchestration-*/` — per-runner stage adapters (`codex`, `cursor`, `claude`, `gemini`, `kilo`) for Intake, Design Synthesis, Adversarial Challenge, Execution Blueprint, Drift Match, Coordinated Build, quality-static, quality-tests, post-build, release-readiness, and pipeline.
+- `scripts/adapters/generate_adapters.py` — deterministic generator (`--check` available) for adapters, legacy mirrors (`.codex/.cursor`), and runner root entry files.
+- `scripts/check-adapter-sync.sh` — sync guard used by verify to ensure generated files match templates.
+- `CODEX.md`, `CURSOR.md`, `CLAUDE.md`, `GEMINI.md`, `KILO.md` — runner-specific root entrypoints into the orchestration pipeline.
+- `.codex/skills/orchestration/SKILL.md` — legacy-compatible core playbook reference.
+- `contracts/artifacts/` — artifact schemas (brief, design-document, review-report, execution-plan, drift-report, quality-report, release-readiness, execution-trace, evaluation-report, context-manifest-gate, traceability-check).
 - `contracts/quality-gate.schema.json` — reusable quality gate schema.
 - `skills/dev-tools/quality-gate/` — runtime skill: artifact validation + acceptance criteria.
 - `skills/dev-tools/multi-model-review/` — runtime skill: finding dedup, cost/benefit analysis, drift detection.
@@ -25,6 +29,13 @@ Repo-wide shortcut:
 ./scripts/verify.sh
 ```
 This now includes an orchestration integrity smoke-check (`scripts/check-orchestration-integrity.sh`) before package build/tests.
+It also includes adapter template sync validation (`scripts/check-adapter-sync.sh`).
+It also enforces markdown link integrity (`scripts/check-markdown-links.py`) and tracked-file hygiene (`scripts/check-repo-hygiene.sh`).
+
+Fast diff-aware mode:
+```bash
+./scripts/verify.sh --changed-only [--changed-base <git-ref>]
+```
 
 ### quality-gate
 ```bash

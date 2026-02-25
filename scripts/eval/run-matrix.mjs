@@ -4,59 +4,32 @@ import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { validateTasksetSchema } from "./lib/taskset-validate.mjs";
 import { getRunDir, resolveWithinRepo, toWorkspaceRelative } from "../pipeline/lib/state.mjs";
+import { parseArgs as parseCliArgs } from "../lib/argv.mjs";
+import { CONFIG_IDS, PHASE_ORDER } from "../lib/constants.mjs";
 
-const CONFIG_IDS = [
-  "baseline_single_agent",
-  "phased_default",
-  "phased_plus_reviewers",
-  "phased_with_context_budgets",
-  "phased_dual_extractor_drift",
-];
-
-const PHASE_ORDER = [
-  "arm",
-  "design",
-  "adversarial-review",
-  "plan",
-  "pmatch",
-  "build",
-  "quality-static",
-  "quality-tests",
-  "post-build",
-  "release-readiness",
-];
 const EVAL_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
 function parseArgs(argv) {
-  const args = {
-    root: process.cwd(),
-    evalId: `eval-${new Date().toISOString().replace(/[-:.]/g, "").replace("Z", "Z")}`,
-    taskset: "docs/eval/tasksets/default.json",
-    repeats: 1,
-    mode: "shadow",
-  };
+  const args = parseCliArgs(
+    {
+      defaults: {
+        root: process.cwd(),
+        evalId: `eval-${new Date().toISOString().replace(/[-:.]/g, "").replace("Z", "Z")}`,
+        taskset: "docs/eval/tasksets/default.json",
+        repeats: 1,
+        mode: "shadow",
+      },
+      options: {
+        root: { type: "string" },
+        "eval-id": { key: "evalId", type: "string" },
+        taskset: { type: "string" },
+        repeats: { type: "number" },
+        mode: { type: "string", enum: ["shadow", "enforce"] },
+      },
+    },
+    argv.slice(2),
+  );
 
-  for (let i = 2; i < argv.length; i++) {
-    const arg = argv[i];
-    const next = argv[i + 1];
-    const requireValue = (flag) => {
-      if (!next || next.startsWith("--")) {
-        throw new Error(`Missing value for ${flag}`);
-      }
-      i++;
-      return next;
-    };
-    if (arg === "--root") args.root = requireValue("--root");
-    else if (arg === "--eval-id") args.evalId = requireValue("--eval-id");
-    else if (arg === "--taskset") args.taskset = requireValue("--taskset");
-    else if (arg === "--repeats") args.repeats = Number(requireValue("--repeats"));
-    else if (arg === "--mode") args.mode = requireValue("--mode");
-    else throw new Error(`Unknown argument: ${arg}`);
-  }
-
-  if (!["shadow", "enforce"].includes(args.mode)) {
-    throw new Error("--mode must be shadow or enforce");
-  }
   if (!Number.isInteger(args.repeats) || args.repeats < 1) {
     throw new Error("--repeats must be an integer >= 1");
   }

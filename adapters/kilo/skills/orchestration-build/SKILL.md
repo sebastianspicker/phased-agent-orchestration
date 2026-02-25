@@ -1,0 +1,64 @@
+---
+name: orchestration-build
+description: "Kilo adapter for /build. Coordinates parallel builder subagents under strict context scoping and verifies plan conformance after implementation."
+---
+
+# /build - Coordinated Parallel Implementation (Kilo Adapter)
+
+## Use this when
+- Plan (and relevant drift checks) are complete.
+- The user requests `/build` or implementation start.
+
+## Model tiers
+- Lead: high-capability coordinator
+- Builders: fast worker models
+
+## Semantic intent
+- Separation of duties: lead coordinates and validates process; builders implement.
+- Context minimization: each builder receives only its scoped work package.
+
+## Input
+- `.pipeline/runs/<run-id>/plan.json`
+
+## Procedure
+
+### 1. Dispatch scoped work packages
+Launch one Task subagent per task group. Each builder receives only:
+- its own task set,
+- required file excerpts,
+- relevant verification commands.
+- Enforce `config.orchestration_policy.max_builders` and active budget constraints from pipeline state.
+
+### 2. Supervise and unblock
+Lead tracks progress, resolves blockers, and enforces ownership boundaries. Lead does not author production code.
+
+### 3. Collect and verify outputs
+After worker completion:
+- validate acceptance criteria,
+- execute verification commands,
+- record deviations.
+
+### 4. Run post-build plan conformance check
+Execute `/pmatch` plan-vs-implementation verification.
+
+### 5. Gate evaluation
+Require:
+- acceptance criteria satisfied,
+- verification commands successful,
+- no unresolved high-severity drift,
+- tests passing.
+- `coverage-min` requirement gate for MUST requirements remains satisfied after implementation changes.
+
+Write gate output to:
+- `.pipeline/runs/<run-id>/gates/build-gate.json`
+
+## Context isolation requirements
+Builders must not see:
+- other task groups,
+- full design history,
+- other builders' intermediate outputs.
+
+## Non-negotiables
+- Lead coordinates only
+- Ownership map is enforced
+- Context leakage between builders is prohibited

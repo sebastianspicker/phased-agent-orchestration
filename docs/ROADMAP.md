@@ -518,7 +518,7 @@ A compatible approach for the repo:
 - trace event schemas,
 - evaluation report schemas.
 - Then provide lightweight example adapters in `adapters/` (optional):
-- Cursor adapter already exists conceptually in `.cursor/skills/*`.
+- Runner adapters are now centralized under `adapters/<runner>/skills/*`.
 - The repo can add more without changing core principles.
 
 ---

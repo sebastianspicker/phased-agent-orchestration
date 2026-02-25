@@ -11,6 +11,7 @@ import {
 import { dirname, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { resolveWithinRepo } from "../pipeline/lib/state.mjs";
+import { parseArgs as parseCliArgs } from "../lib/argv.mjs";
 
 const TAXONOMY = ["interface", "invariant", "security", "performance", "docs"];
 const MODES = ["heuristic", "dual-extractor"];
@@ -24,36 +25,37 @@ function parseRatioArg(name, value) {
 }
 
 function parseArgs(argv) {
-  const args = {
-    root: process.cwd(),
-    output: ".pipeline/evaluations/drift-quality-report.json",
-    precisionMin: 0.75,
-    recallMin: 0.65,
-    f1Min: 0.7,
-  };
-
-  for (let i = 2; i < argv.length; i++) {
-    const arg = argv[i];
-    const next = argv[i + 1];
-    const requireValue = (flag) => {
-      if (!next || next.startsWith("--")) {
-        throw new Error(`Missing value for ${flag}`);
-      }
-      i++;
-      return next;
-    };
-    if (arg === "--root") args.root = requireValue("--root");
-    else if (arg === "--output") args.output = requireValue("--output");
-    else if (arg === "--precision-min")
-      args.precisionMin = parseRatioArg("--precision-min", requireValue("--precision-min"));
-    else if (arg === "--recall-min")
-      args.recallMin = parseRatioArg("--recall-min", requireValue("--recall-min"));
-    else if (arg === "--f1-min")
-      args.f1Min = parseRatioArg("--f1-min", requireValue("--f1-min"));
-    else throw new Error(`Unknown argument: ${arg}`);
-  }
-
-  return args;
+  return parseCliArgs(
+    {
+      defaults: {
+        root: process.cwd(),
+        output: ".pipeline/evaluations/drift-quality-report.json",
+        precisionMin: 0.75,
+        recallMin: 0.65,
+        f1Min: 0.7,
+      },
+      options: {
+        root: { type: "string" },
+        output: { type: "string" },
+        "precision-min": {
+          key: "precisionMin",
+          type: "number",
+          parse: (value) => parseRatioArg("--precision-min", value),
+        },
+        "recall-min": {
+          key: "recallMin",
+          type: "number",
+          parse: (value) => parseRatioArg("--recall-min", value),
+        },
+        "f1-min": {
+          key: "f1Min",
+          type: "number",
+          parse: (value) => parseRatioArg("--f1-min", value),
+        },
+      },
+    },
+    argv.slice(2),
+  );
 }
 
 function toMetrics(tp, fp, fn) {

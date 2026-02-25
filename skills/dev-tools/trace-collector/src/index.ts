@@ -1,66 +1,16 @@
 import { performance } from "node:perf_hooks";
 import { readFileSync } from "node:fs";
-import type { Input, RunResult } from "./types.js";
+import type { Input, TraceResult } from "./types.js";
 import { validateInput } from "./lib/input.js";
 import { collectTrace } from "./lib/trace.js";
+import { runTool } from "@coding-agents-space/shared";
 
 const TOOL_VERSION = "0.1.0";
 
-function readStdin(): string {
-  return readFileSync(0, "utf8");
-}
-
-function getErrorDetails(stack?: string): string | undefined {
-  return process.env.DEBUG_ERROR_DETAILS === "1" ? stack : undefined;
-}
-
-async function main() {
-  const t0 = performance.now();
-  let logs: string[] = [];
-
-  try {
-    const raw = readStdin();
-    if (!raw.trim()) {
-      throw Object.assign(new Error("Empty input: expected JSON on stdin"), {
-        code: "E_BAD_INPUT",
-      });
-    }
-
-    const input = JSON.parse(raw) as Input;
-    validateInput(input);
-    const data = await collectTrace(input, logs, {
-      workspaceRoot: process.env.WORKSPACE_ROOT ?? "/workspace",
-    });
-
-    const result: RunResult = {
-      success: true,
-      data,
-      metadata: {
-        tool_version: TOOL_VERSION,
-        execution_time_ms: Math.round(performance.now() - t0),
-      },
-      logs,
-    };
-
-    process.stdout.write(JSON.stringify(result, null, 2));
-  } catch (err: unknown) {
-    const e = err as { code?: string; message?: string; stack?: string };
-    const result: RunResult = {
-      success: false,
-      error: {
-        code: e.code ?? "E_UNKNOWN",
-        message: e.message ?? "Unknown error",
-        details: getErrorDetails(e.stack),
-      },
-      metadata: {
-        tool_version: TOOL_VERSION,
-        execution_time_ms: Math.round(performance.now() - t0),
-      },
-      logs,
-    };
-    process.stdout.write(JSON.stringify(result, null, 2));
-    process.exit(1);
-  }
-}
-
-main();
+runTool<Input, TraceResult>(TOOL_VERSION, async (input: Input, logs: string[]) => {
+  validateInput(input);
+  const data = await collectTrace(input, logs, {
+    workspaceRoot: process.env.WORKSPACE_ROOT ?? "/workspace",
+  });
+  return { data, logs };
+});

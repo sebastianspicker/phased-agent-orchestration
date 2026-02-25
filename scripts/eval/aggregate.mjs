@@ -6,14 +6,8 @@ import {
   resolveWithinRepo,
   toWorkspaceRelative,
 } from "../pipeline/lib/state.mjs";
-
-const CONFIG_IDS = [
-  "baseline_single_agent",
-  "phased_default",
-  "phased_plus_reviewers",
-  "phased_with_context_budgets",
-  "phased_dual_extractor_drift",
-];
+import { parseArgs as parseCliArgs } from "../lib/argv.mjs";
+import { CONFIG_IDS } from "../lib/constants.mjs";
 
 function readJson(path, fallback = null) {
   if (!existsSync(path)) return fallback;
@@ -21,22 +15,17 @@ function readJson(path, fallback = null) {
 }
 
 function parseArgs(argv) {
-  const args = { matrix: null, output: null, root: process.cwd() };
-  for (let i = 2; i < argv.length; i++) {
-    const arg = argv[i];
-    const next = argv[i + 1];
-    const requireValue = (flag) => {
-      if (!next || next.startsWith("--")) {
-        throw new Error(`Missing value for ${flag}`);
-      }
-      i++;
-      return next;
-    };
-    if (arg === "--matrix") args.matrix = requireValue("--matrix");
-    else if (arg === "--output") args.output = requireValue("--output");
-    else if (arg === "--root") args.root = requireValue("--root");
-    else throw new Error(`Unknown argument: ${arg}`);
-  }
+  const args = parseCliArgs(
+    {
+      defaults: { matrix: null, output: null, root: process.cwd() },
+      options: {
+        matrix: { type: "string" },
+        output: { type: "string" },
+        root: { type: "string" },
+      },
+    },
+    argv.slice(2),
+  );
   if (!args.matrix || !args.output) {
     throw new Error("Usage: aggregate.mjs --matrix <matrix.json> --output <evaluation-report.json> [--root <repo>] ");
   }

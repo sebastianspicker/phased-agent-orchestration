@@ -11,8 +11,8 @@ The system is built around one simple rule:
 
 > [!IMPORTANT]
 > Scientific evidence and formal rationale are documented in:
+> - [`docs/INDEX.md`](docs/INDEX.md)
 > - [`docs/SCIENTIFIC_FOUNDATION.md`](docs/SCIENTIFIC_FOUNDATION.md)
-> - [`docs/MATH_AND_CS_BEHIND_THE_REPO.md`](docs/MATH_AND_CS_BEHIND_THE_REPO.md)
 > - [`docs/SCIENTIFIC_IMPLEMENTATION_MAP.md`](docs/SCIENTIFIC_IMPLEMENTATION_MAP.md)
 
 Each stage has a clear job, a typed artifact, and a gate. This prevents the usual failure mode where planning, coding, and auditing blur together.
@@ -40,8 +40,8 @@ This orchestration addresses those problems directly:
 
 The scientific docs in this repo explain the same idea in math form:
 
+- `docs/INDEX.md`
 - `docs/SCIENTIFIC_FOUNDATION.md`
-- `docs/MATH_AND_CS_BEHIND_THE_REPO.md`
 - `docs/SCIENTIFIC_IMPLEMENTATION_MAP.md`
 
 Here is the plain-language version.
@@ -143,8 +143,8 @@ flowchart TB
 
 The current implementation strengthens existing behavior without reintroducing external model dependencies:
 
-1. `pmatch` is first-class in Cursor via its own adapter:
-- `.cursor/skills/orchestration-pmatch/SKILL.md`
+1. `pmatch` is first-class across all supported runners via stage adapters:
+- `adapters/<runner>/skills/orchestration-pmatch/SKILL.md`
 
 2. Drift detection now supports **dual-extractor adjudication** (default in `pmatch`) with fallback heuristic mode:
 - `drift_config.mode = "dual-extractor" | "heuristic"`
@@ -270,31 +270,29 @@ flowchart TB
 `./scripts/verify.sh` runs:
 1. skill validation,
 2. stale reference checks,
-3. orchestration integrity checks,
-4. lint+format-check+build+tests for runtime packages.
+3. tracked-file hygiene checks (`scripts/check-repo-hygiene.sh`),
+4. markdown link integrity checks (`scripts/check-markdown-links.py`),
+5. adapter template sync checks (`scripts/check-adapter-sync.sh`),
+6. orchestration integrity checks,
+7. lint+format-check+build+tests for runtime packages.
+
+Fast feedback mode:
+```bash
+./scripts/verify.sh --changed-only [--changed-base <git-ref>]
+```
+This always runs core checks and selectively verifies affected runtime packages.
 
 The orchestration integrity step (`scripts/check-orchestration-integrity.sh`) verifies:
 - adapter presence for all pipeline stages,
 - expected gate filenames per adapter,
-- stage-order consistency between pipeline adapter and playbook,
+- stage-order consistency between each runner pipeline adapter and the core playbook,
 - phase coverage in `contracts/quality-gate.schema.json`.
 
 ## Repository Layout
 
-```text
-.codex/skills/orchestration/          core orchestration playbook
-.cursor/skills/orchestration-*/       11 Cursor adapters (arm, design, ar, plan, pmatch, build, quality-static, quality-tests, post-build, release-readiness, pipeline)
-contracts/artifacts/                  artifact schemas
-contracts/quality-gate.schema.json    gate result schema
-skills/dev-tools/quality-gate/        schema + criteria gate runtime
-skills/dev-tools/multi-model-review/  review merge, cost/risk, drift adjudication runtime
-skills/dev-tools/trace-collector/     trace validation + summary runtime
-scripts/pipeline-init.sh              run bootstrap
-scripts/eval/                         evaluation matrix + aggregation
-scripts/check-orchestration-integrity.sh
-scripts/verify.sh                     repo verification entrypoint
-docs/pipeline/                        pipeline state template
-```
+For a detailed breakdown of the codebase organization, runtime skills, contracts, and cross-cutting flows, please refer to:
+- [docs/INDEX.md](docs/INDEX.md)
+- [docs/REPO_MAP.md](docs/REPO_MAP.md)
 
 ## API Independence
 
@@ -309,8 +307,16 @@ The system expects a runner that can:
 
 The contracts and runtime packages are runner-agnostic. Adapt only the orchestration layer per platform.
 
-- Codex: use `.codex/skills/orchestration/SKILL.md`.
-- Cursor: use `.cursor/skills/orchestration-*/` adapters.
+- Template source of truth: `adapters/templates/`
+- Generate/update outputs: `python3 scripts/adapters/generate_adapters.py`
+- Verify outputs are synced: `python3 scripts/adapters/generate_adapters.py --check`
+- Runner root entry docs: `CODEX.md`, `CURSOR.md`, `CLAUDE.md`, `GEMINI.md`, `KILO.md`
+- Codex: use `adapters/codex/skills/orchestration-pipeline/SKILL.md`.
+- Cursor: use `adapters/cursor/skills/orchestration-pipeline/SKILL.md`.
+- Claude: use `adapters/claude/skills/orchestration-pipeline/SKILL.md`.
+- Gemini: use `adapters/gemini/skills/orchestration-pipeline/SKILL.md`.
+- Kilo: use `adapters/kilo/skills/orchestration-pipeline/SKILL.md`.
+- Legacy compatibility: `.codex/` and `.cursor/` remain available, but `adapters/` is source of truth.
 - Any other runner: keep the same contracts, artifacts, and gate semantics.
 
 ## Requirements

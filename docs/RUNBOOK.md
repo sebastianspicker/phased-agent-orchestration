@@ -5,22 +5,47 @@ This runbook lists reproducible commands for setup, verification, and troublesho
 ## Requirements
 - Node.js >= 20 (see `skills/dev-tools/*/package.json` engines).
 - npm (for `npm ci` / `npm run`).
-- Python 3 (for `scripts/codex/validate_skills.py`).
+- Python 3 (for `scripts/skills/validate_skills.py`).
+- ripgrep (`rg`) for stale-ref and hygiene checks.
 - Docker (optional, for local sandbox execution).
 
-## Repo-wide verification (full loop)
-From repo root:
+### 2. Full CI Verification
+The primary check for all code, types, and schema validity:
 ```bash
 ./scripts/verify.sh
 ```
 This runs:
-- `python3 scripts/codex/validate_skills.py`
-- `npm ci`, `npm run lint`, `npm run format:check`, `npm run build`, `npm test` for all runtime skill packages (`quality-gate`, `multi-model-review`, `trace-collector`).
+1. `validate_skills.py` (checks `.codex` and all manifest-declared `adapters/*/skills` roots)
+2. `check-no-stale-refs.sh` (ensures outdated internal links don't leak outside `_archive`)
+3. `check-repo-hygiene.sh` (fails on tracked local junk files such as `.DS_Store`)
+4. `check-markdown-links.py` (checks relative Markdown links in `README.md`, `AGENTS.md`, `docs/*.md`)
+5. `check-adapter-sync.sh` (ensures generated adapters/mirrors match templates)
+6. `check-orchestration-integrity.sh` (validates all runners from `adapters/spec/adapter-manifest.json`)
+7. For each runtime package in `skills/dev-tools/*`:
+   - `npm ci`
+   - `npm run lint` (Biome)
+   - `npm run format:check` (Biome)
+   - `npm run build` (tsc)
+   - `npm test` (vitest)
+
+### 3. Fast changed-only verification
+Use this for PR/local fast feedback:
+```bash
+./scripts/verify.sh --changed-only
+```
+
+You can override the diff base:
+```bash
+./scripts/verify.sh --changed-only --changed-base origin/main
+```
 
 ## Fast loop (per-package)
 From repo root:
 ```bash
+python3 scripts/skills/validate_skills.py --manifest "$(pwd)/adapters/spec/adapter-manifest.json" --root "$(pwd)/.codex/skills"
+python3 scripts/adapters/generate_adapters.py --check
 python3 scripts/codex/validate_skills.py
+python3 scripts/check-markdown-links.py --root "$(pwd)"
 ```
 Then, in the relevant package:
 ```bash
@@ -100,3 +125,9 @@ Use these checks during `security-review` and after fixes:
 - Node version mismatch: ensure Node >= 20.
 - Python not found: install Python 3 or adjust PATH.
 - `npm ci` fails: delete `node_modules` and retry.
+
+## Local cleanup utility
+Remove local junk/caches without changing tracked source files:
+```bash
+./scripts/clean-local.sh
+```

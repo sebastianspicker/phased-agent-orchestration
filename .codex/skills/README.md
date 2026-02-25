@@ -6,7 +6,8 @@ This directory contains the **orchestration playbook**: a quality-gated pipeline
 - Repo guide + verification rules: [AGENTS.md](../../AGENTS.md)
 
 ## Validation
-- Local check: `python3 scripts/codex/validate_skills.py`
+- Local check (legacy-compatible): `python3 scripts/codex/validate_skills.py`
+- Multi-root check: `python3 scripts/skills/validate_skills.py --manifest "$(pwd)/adapters/spec/adapter-manifest.json" --root "$(pwd)/.codex/skills"`
 
 ## Types (1)
 

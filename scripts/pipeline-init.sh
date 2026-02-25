@@ -90,11 +90,11 @@ cat > "$pipeline_dir/pipeline-state.json" <<EOF
       "build_worker": 8000
     },
     "feature_flags": {
-      "trace_v1": false,
-      "evaluation_v1": false,
-      "context_budget_v1": false,
-      "traceability_v1": false,
-      "drift_benchmark_v1": false
+      "trace_v1": true,
+      "evaluation_v1": true,
+      "context_budget_v1": true,
+      "traceability_v1": true,
+      "drift_benchmark_v1": true
     }
   }
 }

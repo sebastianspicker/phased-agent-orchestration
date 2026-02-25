@@ -4,11 +4,18 @@
 - `AGENTS.md` — agent rules, repo map, verification commands.
 - `README.md` — repository overview (runtime skills + playbooks).
 - `scripts/verify.sh` — repo-wide verification (validates playbook skills + runs lint/format/build/test on all runtime packages).
+- `scripts/check-markdown-links.py` — relative markdown link integrity check for README/AGENTS/docs.
+- `scripts/check-repo-hygiene.sh` — fails on tracked local-junk files.
+- `scripts/clean-local.sh` — optional local cleanup utility for junk/caches.
+- `scripts/lib/` — shared script constants and argv parsing utilities.
 - `contracts/` — shared JSON schemas (artifact contracts + quality gate).
 - `agent-config/` — tool definitions and constraints.
+- `adapters/` — canonical per-runner orchestration adapters + adapter manifest.
+- `adapters/templates/` — source templates for generated adapter/mirror files.
 - `.codex/skills/` — playbook skills (agent guidance); index in `.codex/skills/README.md`. Other `.codex/` subdirs are excluded from this map.
 - `deprecated/` — local-only retirement area for obsolete files (gitignored; not part of repository).
 - `docs/` — runbook, repo map, skill template, decisions.
+- `docs/INDEX.md` — canonical docs navigation.
 - `skills/dev-tools/*` — runtime skill packages.
 
 ## Runtime skill packages
@@ -36,6 +43,7 @@
 ## Cross-cutting flows
 - Tool contracts live in `contracts/*.schema.json` and are referenced by runtime skills and tool definitions.
 - Tool definitions live in `agent-config/tool-definitions/tools.generated.json`.
-- Skill validation: `scripts/codex/validate_skills.py` enforces SKILL.md frontmatter and structure.
+- Adapter generation/sync: `scripts/adapters/generate_adapters.py` renders `adapters/<runner>/skills/*`, legacy mirrors (`.codex/.cursor`), and runner root entry files; `scripts/check-adapter-sync.sh` enforces sync in verify.
+- Skill validation: `scripts/skills/validate_skills.py` enforces SKILL.md frontmatter and structure across manifest-declared skill roots (`scripts/codex/validate_skills.py` remains a compatibility wrapper).
 - Release-readiness contract: `contracts/artifacts/release-readiness.schema.json` defines final go/no-go evidence requirements.
 - Security orchestration contract: `contracts/artifacts/quality-report.schema.json` requires `security_audit` for `audit_type=security`, including coverage checklist, fix-loop evidence, and accepted-risk signoff metadata.

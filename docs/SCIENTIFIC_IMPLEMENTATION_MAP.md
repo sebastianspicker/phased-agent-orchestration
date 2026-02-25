@@ -35,8 +35,10 @@ This repository is designed as **two separable layers**:
 
 ### 2.1 Orchestration layer (runner-specific)
 
-- Codex playbook: **`../.codex/skills/orchestration/SKILL.md`**
-- Cursor adapters: **`../.cursor/skills/orchestration-*/SKILL.md`**
+- Canonical adapters: **`../adapters/<runner>/skills/orchestration-*/SKILL.md`**
+- Canonical templates: **`../adapters/templates/`**
+- Deterministic generation + sync check: **`../scripts/adapters/generate_adapters.py`** and **`../scripts/check-adapter-sync.sh`**
+- Legacy core playbook (compatibility): **`../.codex/skills/orchestration/SKILL.md`**
 
 These files define _how_ a runner should execute each stage and what artifacts/gates it must produce.
 
@@ -88,7 +90,7 @@ arm -> design -> adversarial-review -> plan -> pmatch -> build
 
 #### Phase: `arm` (Requirements crystallization)
 
-- Cursor adapter: `../.cursor/skills/orchestration-arm/SKILL.md`
+- Runner adapter (example cursor): `../adapters/cursor/skills/orchestration-arm/SKILL.md`
 - Artifact schema: `../contracts/artifacts/brief.schema.json`
 - Artifact output path: `.pipeline/runs/<run-id>/brief.json`
 - Gate output path: `.pipeline/runs/<run-id>/gates/arm-gate.json`
@@ -99,7 +101,7 @@ arm -> design -> adversarial-review -> plan -> pmatch -> build
 
 #### Phase: `design` (First-principles, evidence-backed design)
 
-- Cursor adapter: `../.cursor/skills/orchestration-design/SKILL.md`
+- Runner adapter (example cursor): `../adapters/cursor/skills/orchestration-design/SKILL.md`
 - Artifact schema: `../contracts/artifacts/design-document.schema.json`
 - Artifact output path: `.pipeline/runs/<run-id>/design.json`
 - Gate output path: `.pipeline/runs/<run-id>/gates/design-gate.json`
@@ -110,7 +112,7 @@ arm -> design -> adversarial-review -> plan -> pmatch -> build
 
 #### Phase: `adversarial-review` (Parallel specialist critique + fact-check)
 
-- Cursor adapter: `../.cursor/skills/orchestration-ar/SKILL.md`
+- Runner adapter (example cursor): `../adapters/cursor/skills/orchestration-ar/SKILL.md`
 - Artifact schema: `../contracts/artifacts/review-report.schema.json`
 - Artifact output path: `.pipeline/runs/<run-id>/review.json`
 - Gate output path: `.pipeline/runs/<run-id>/gates/adversarial-review-gate.json`
@@ -125,7 +127,7 @@ arm -> design -> adversarial-review -> plan -> pmatch -> build
 
 #### Phase: `plan` (Deterministic execution blueprint)
 
-- Cursor adapter: `../.cursor/skills/orchestration-plan/SKILL.md`
+- Runner adapter (example cursor): `../adapters/cursor/skills/orchestration-plan/SKILL.md`
 - Artifact schema: `../contracts/artifacts/execution-plan.schema.json`
 - Artifact output path: `.pipeline/runs/<run-id>/plan.json`
 - Gate output path: `.pipeline/runs/<run-id>/gates/plan-gate.json`
@@ -140,7 +142,7 @@ arm -> design -> adversarial-review -> plan -> pmatch -> build
 
 #### Phase: `pmatch` (Mechanized drift detection with dual-extractor adjudication)
 
-- Cursor adapter: `../.cursor/skills/orchestration-pmatch/SKILL.md`
+- Runner adapter (example cursor): `../adapters/cursor/skills/orchestration-pmatch/SKILL.md`
 - Artifact schema: `../contracts/artifacts/drift-report.schema.json`
 - Artifact output path: `.pipeline/runs/<run-id>/drift-reports/pmatch.json`
 - Gate output path: `.pipeline/runs/<run-id>/gates/pmatch-gate.json`
@@ -156,7 +158,7 @@ Runtime adjudicator:
 
 #### Phase: `build` (Coordinated parallel implementation + conformance check)
 
-- Cursor adapter: `../.cursor/skills/orchestration-build/SKILL.md`
+- Runner adapter (example cursor): `../adapters/cursor/skills/orchestration-build/SKILL.md`
 - Artifact output: implementation changes + `.pipeline/.../gates/build-gate.json`
 
 **Non-negotiables**:
@@ -169,7 +171,7 @@ Runtime adjudicator:
 
 #### Phase: `quality-static` (Lint/format/type/build as a hard gate)
 
-- Cursor adapter: `../.cursor/skills/orchestration-quality-static/SKILL.md`
+- Runner adapter (example cursor): `../adapters/cursor/skills/orchestration-quality-static/SKILL.md`
 - Artifact schema: `../contracts/artifacts/quality-report.schema.json` (`audit_type = static`)
 - Output path: `.pipeline/.../quality-reports/static.json`
 - Gate path: `.pipeline/.../gates/quality-static-gate.json`
@@ -178,7 +180,7 @@ Runtime adjudicator:
 
 #### Phase: `quality-tests` (Predeclared tests as a dedicated gate)
 
-- Cursor adapter: `../.cursor/skills/orchestration-quality-tests/SKILL.md`
+- Runner adapter (example cursor): `../adapters/cursor/skills/orchestration-quality-tests/SKILL.md`
 - Artifact schema: `../contracts/artifacts/quality-report.schema.json` (`audit_type = tests`)
 - Output path: `.pipeline/.../quality-reports/tests.json`
 - Gate path: `.pipeline/.../gates/quality-tests-gate.json`
@@ -187,7 +189,7 @@ Runtime adjudicator:
 
 #### Phase: `post-build` (denoise + audits + security fix-loop)
 
-- Cursor adapter: `../.cursor/skills/orchestration-postbuild/SKILL.md`
+- Runner adapter (example cursor): `../adapters/cursor/skills/orchestration-postbuild/SKILL.md`
 - Artifact schema: `../contracts/artifacts/quality-report.schema.json` (multiple audit types)
 - Outputs:
   - `.pipeline/.../quality-reports/denoise.json`
@@ -207,7 +209,7 @@ Runtime adjudicator:
 
 #### Phase: `release-readiness` (final ship gate)
 
-- Cursor adapter: `../.cursor/skills/orchestration-release-readiness/SKILL.md`
+- Runner adapter (example cursor): `../adapters/cursor/skills/orchestration-release-readiness/SKILL.md`
 - Artifact schema: `../contracts/artifacts/release-readiness.schema.json`
 - Output: `.pipeline/.../release-readiness.json`
 - Gate: `.pipeline/.../gates/release-readiness-gate.json`
@@ -302,8 +304,16 @@ This performs:
 
 1. skill validation
 2. stale reference checks
-3. orchestration integrity checks
-4. lint/format-check/build/test for runtime packages (`quality-gate`, `multi-model-review`, `trace-collector`)
+3. tracked-file hygiene checks
+4. markdown link integrity checks
+5. adapter sync + orchestration integrity checks
+6. lint/format-check/build/test for runtime packages (`quality-gate`, `multi-model-review`, `trace-collector`)
+
+Fast diff-aware mode is available for local/PR loops:
+
+```bash
+./scripts/verify.sh --changed-only
+```
 
 ### 5.2 Orchestration integrity checks (why this matters)
 

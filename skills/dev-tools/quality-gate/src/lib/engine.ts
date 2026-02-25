@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { realpathSync } from "node:fs";
-import path from "node:path";
+import { resolveWithinWorkspace } from "@coding-agents-space/shared";
 import type { GateResult, GateStatus, Input } from "../types.js";
 import { evaluateCriteria } from "./criteria.js";
 import { validateInput } from "./input.js";
@@ -11,39 +10,6 @@ interface EvaluateGateOptions {
   now?: Date;
 }
 
-function badInput(message: string): Error {
-  return Object.assign(new Error(message), { code: "E_BAD_INPUT" });
-}
-
-function resolveSchemaPath(workspaceRoot: string, schemaRef: string): string {
-  if (path.isAbsolute(schemaRef)) {
-    throw badInput("schema_ref must resolve within workspaceRoot");
-  }
-
-  const root = realpathSync(path.resolve(workspaceRoot));
-  const resolved = path.resolve(root, schemaRef);
-  const rel = path.relative(root, resolved);
-
-  if (rel.startsWith("..") || path.isAbsolute(rel)) {
-    throw badInput("schema_ref must resolve within workspaceRoot");
-  }
-
-  try {
-    const resolvedReal = realpathSync(resolved);
-    const resolvedRel = path.relative(root, resolvedReal);
-    if (resolvedRel.startsWith("..") || path.isAbsolute(resolvedRel)) {
-      throw badInput("schema_ref must resolve within workspaceRoot");
-    }
-  } catch (err: unknown) {
-    const e = err as { code?: string };
-    if (e.code !== "ENOENT") {
-      throw err;
-    }
-  }
-
-  return resolved;
-}
-
 export async function evaluateGate(
   input: Input,
   opts: EvaluateGateOptions = {},
@@ -52,7 +18,7 @@ export async function evaluateGate(
 
   const workspaceRoot = opts.workspaceRoot ?? "/workspace";
   const logs: string[] = [];
-  const schemaPath = resolveSchemaPath(workspaceRoot, input.schema_ref);
+  const schemaPath = resolveWithinWorkspace(workspaceRoot, input.schema_ref, "schema_ref");
   logs.push(`Validating artifact against schema: ${schemaPath}`);
 
   const schemaValidation = await validateArtifact(input.artifact, schemaPath);
