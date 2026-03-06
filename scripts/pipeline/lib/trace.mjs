@@ -1,6 +1,5 @@
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 import {
   ensureRunDirs,
   getRepoRoot,
@@ -8,12 +7,8 @@ import {
   toWorkspaceRelative,
   writeJson,
 } from "./state.mjs";
-
-function badInput(message) {
-  const err = new Error(message);
-  err.code = "E_BAD_INPUT";
-  return err;
-}
+import { badInput, badTrace } from "./errors.mjs";
+import { spawnSkillTool } from "./subprocess.mjs";
 
 export function nowIso() {
   return new Date().toISOString();
@@ -66,9 +61,7 @@ export function readTraceEvents(runId, root = getRepoRoot()) {
     try {
       return JSON.parse(line);
     } catch (error) {
-      const err = new Error(`invalid trace JSONL at line ${idx + 1}: ${String(error)}`);
-      err.code = "E_BAD_TRACE";
-      throw err;
+      throw badTrace(`invalid trace JSONL at line ${idx + 1}: ${String(error)}`);
     }
   });
 }
@@ -118,54 +111,15 @@ export function summarizeEventsLocal(events) {
 }
 
 function runTraceCollector(runId, root = getRepoRoot()) {
-  const collectorEntry = resolve(root, "skills/dev-tools/trace-collector/dist/index.js");
-  if (!existsSync(collectorEntry)) {
-    const err = new Error(
-      "trace-collector dist entrypoint missing. Run npm run build in skills/dev-tools/trace-collector.",
-    );
-    err.code = "E_COLLECTOR_MISSING";
-    throw err;
-  }
-
-  const input = {
-    run_id: runId,
-    trace_path: toWorkspaceRelative(getTracePath(runId, root), root),
-  };
-
-  const proc = spawnSync("node", [collectorEntry], {
-    cwd: root,
-    input: JSON.stringify(input),
-    encoding: "utf8",
-    env: {
-      ...process.env,
-      WORKSPACE_ROOT: root,
+  return spawnSkillTool({
+    entrypoint: "skills/dev-tools/trace-collector/dist/index.js",
+    input: {
+      run_id: runId,
+      trace_path: toWorkspaceRelative(getTracePath(runId, root), root),
     },
+    root,
+    toolName: "trace-collector",
   });
-
-  const rawOut = proc.stdout || proc.stderr;
-  if (!rawOut) {
-    const err = new Error("trace-collector returned empty output");
-    err.code = "E_COLLECTOR_EMPTY";
-    throw err;
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(rawOut);
-  } catch (error) {
-    const err = new Error(`trace-collector returned invalid JSON: ${String(error)}`);
-    err.code = "E_COLLECTOR_PARSE";
-    throw err;
-  }
-
-  if (proc.status !== 0 || !parsed.success) {
-    const msg = parsed?.error?.message || rawOut;
-    const err = new Error(`trace-collector failed: ${msg}`);
-    err.code = parsed?.error?.code || "E_COLLECTOR_FAILED";
-    throw err;
-  }
-
-  return parsed.data;
 }
 
 export function summarizeRun(runId, root = getRepoRoot()) {

@@ -1,8 +1,5 @@
+import { badInput } from "@coding-agents-space/shared";
 import type { Input } from "../types.js";
-
-function badInput(message: string): Error {
-  return Object.assign(new Error(message), { code: "E_BAD_INPUT" });
-}
 
 export function validateInput(input: Input): void {
   if (!input || typeof input !== "object" || Array.isArray(input)) {

@@ -1,15 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { badInput } from "./errors.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const RUN_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
-
-function badInput(message) {
-  const err = new Error(message);
-  err.code = "E_BAD_INPUT";
-  return err;
-}
 
 export function getRepoRoot() {
   return repoRoot;

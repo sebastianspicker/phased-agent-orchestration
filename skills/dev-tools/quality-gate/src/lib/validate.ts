@@ -1,49 +1,6 @@
 import { readFileSync } from "node:fs";
+import { createAjvInstance } from "@coding-agents-space/shared";
 import type { SchemaValidationResult } from "../types.js";
-
-interface AjvErrorObject {
-  instancePath: string;
-  message?: string;
-}
-
-interface AjvValidateFunction {
-  (data: unknown): boolean;
-  errors?: AjvErrorObject[] | null;
-}
-
-interface AjvInstance {
-  compile(schema: Record<string, unknown>): AjvValidateFunction;
-}
-
-type AjvConstructor = new (opts: Record<string, unknown>) => AjvInstance;
-type AjvFormatsFn = (ajv: AjvInstance, formats?: string[]) => void;
-
-let _AjvClass: AjvConstructor | undefined;
-let _addFormats: AjvFormatsFn | undefined;
-
-async function getAjv(): Promise<AjvConstructor> {
-  if (_AjvClass) return _AjvClass;
-  const mod: Record<string, unknown> = await import("ajv");
-  const candidate = mod.default ?? mod;
-  const inner =
-    typeof candidate === "function"
-      ? candidate
-      : ((candidate as Record<string, unknown>).default ?? candidate);
-  _AjvClass = inner as AjvConstructor;
-  return _AjvClass;
-}
-
-async function getAddFormats(): Promise<AjvFormatsFn> {
-  if (_addFormats) return _addFormats;
-  const mod: Record<string, unknown> = await import("ajv-formats");
-  const candidate = mod.default ?? mod;
-  const inner =
-    typeof candidate === "function"
-      ? candidate
-      : ((candidate as Record<string, unknown>).default ?? candidate);
-  _addFormats = inner as AjvFormatsFn;
-  return _addFormats;
-}
 
 export async function validateArtifact(
   artifact: Record<string, unknown>,
@@ -64,18 +21,9 @@ export async function validateArtifact(
     return { valid: false, errors: ["Schema file is not valid JSON"] };
   }
 
-  const AjvClass = await getAjv();
-  const addFormats = await getAddFormats();
-  const ajv = new AjvClass({
-    allErrors: true,
-    strict: false,
-    validateSchema: false,
-  });
+  const ajv = await createAjvInstance();
 
-  // Enforce standard JSON Schema string formats used by repo contracts.
-  addFormats(ajv, ["date-time", "uri"]);
-
-  let validateFn: AjvValidateFunction;
+  let validateFn: ReturnType<typeof ajv.compile>;
   try {
     validateFn = ajv.compile(schema as Record<string, unknown>);
   } catch (err: unknown) {

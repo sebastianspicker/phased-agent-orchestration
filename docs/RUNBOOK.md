@@ -44,7 +44,6 @@ From repo root:
 ```bash
 python3 scripts/skills/validate_skills.py --manifest "$(pwd)/adapters/spec/adapter-manifest.json" --root "$(pwd)/.codex/skills"
 python3 scripts/adapters/generate_adapters.py --check
-python3 scripts/codex/validate_skills.py
 python3 scripts/check-markdown-links.py --root "$(pwd)"
 ```
 Then, in the relevant package:

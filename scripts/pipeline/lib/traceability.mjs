@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 import { getRepoRoot, resolveWithinRepo, toWorkspaceRelative } from "./state.mjs";
+import { badInput } from "./errors.mjs";
+import { spawnSkillTool } from "./subprocess.mjs";
 
 const REQUIRED_BY_PHASE = {
   plan: ["must-covered-by-plan-tasks", "must-covered-by-plan-tests"],
@@ -11,12 +11,6 @@ const REQUIRED_BY_PHASE = {
     "must-covered-by-drift-claims",
   ],
 };
-
-function badInput(message) {
-  const err = new Error(message);
-  err.code = "E_BAD_INPUT";
-  return err;
-}
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
@@ -107,48 +101,12 @@ function buildCoverageResult(name, sourceIds, targetIds, extra = {}) {
 }
 
 function runQualityGate(input, root) {
-  const gateEntry = resolve(root, "skills/dev-tools/quality-gate/dist/index.js");
-  if (!existsSync(gateEntry)) {
-    const err = new Error(
-      "quality-gate dist entrypoint missing. Run npm run build in skills/dev-tools/quality-gate.",
-    );
-    err.code = "E_QUALITY_GATE_MISSING";
-    throw err;
-  }
-
-  const proc = spawnSync("node", [gateEntry], {
-    cwd: root,
-    encoding: "utf8",
-    input: JSON.stringify(input),
-    env: {
-      ...process.env,
-      WORKSPACE_ROOT: root,
-    },
+  return spawnSkillTool({
+    entrypoint: "skills/dev-tools/quality-gate/dist/index.js",
+    input,
+    root,
+    toolName: "quality-gate",
   });
-
-  const rawOut = proc.stdout || proc.stderr;
-  if (!rawOut) {
-    const err = new Error("quality-gate returned empty output");
-    err.code = "E_QUALITY_GATE_EMPTY";
-    throw err;
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(rawOut);
-  } catch (error) {
-    const err = new Error(`quality-gate returned invalid JSON: ${String(error)}`);
-    err.code = "E_QUALITY_GATE_PARSE";
-    throw err;
-  }
-
-  if (proc.status !== 0 || !parsed.success) {
-    const err = new Error(parsed?.error?.message || "quality-gate execution failed");
-    err.code = parsed?.error?.code || "E_QUALITY_GATE_FAILED";
-    throw err;
-  }
-
-  return parsed.data;
 }
 
 function loadOptionalJson(ref, root) {

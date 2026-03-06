@@ -1,9 +1,6 @@
 import { realpathSync } from "node:fs";
 import path from "node:path";
-
-function badInput(message: string): Error {
-  return Object.assign(new Error(message), { code: "E_BAD_INPUT" });
-}
+import { badInput } from "./errors.js";
 
 export function assertRepoRelativePath(ref: string, label: string): void {
   if (typeof ref !== "string") {

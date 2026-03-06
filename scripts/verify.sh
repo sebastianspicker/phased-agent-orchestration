@@ -33,8 +33,19 @@ done
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Color output (only when stdout is a terminal)
+if [ -t 1 ]; then
+  GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; BOLD='\033[1m'; NC='\033[0m'
+else
+  GREEN=''; RED=''; YELLOW=''; BOLD=''; NC=''
+fi
+
+step_ok()   { echo -e "${GREEN}PASS${NC}: $1"; }
+step_fail() { echo -e "${RED}FAIL${NC}: $1"; }
+step_info() { echo -e "${BOLD}==> $1${NC}"; }
+
 run_core_checks() {
-  python3 "$root_dir/scripts/skills/validate_skills.py" --manifest "$root_dir/adapters/spec/adapter-manifest.json" --root "$root_dir/.codex/skills"
+  python3 "$root_dir/scripts/skills/validate_skills.py" --manifest "$root_dir/adapters/spec/adapter-manifest.json" --root "$root_dir/.codex/skills" --root "$root_dir/.claude/skills"
   "$root_dir/scripts/check-no-stale-refs.sh"
   "$root_dir/scripts/check-repo-hygiene.sh"
   python3 "$root_dir/scripts/check-markdown-links.py" --root "$root_dir"
@@ -113,9 +124,6 @@ verify_pkg() {
   echo "==> verify $pkg"
   (
     cd "$root_dir/$pkg"
-    if [ "$SKIP_INSTALL" -eq 0 ]; then
-      npm ci
-    fi
     npm run lint
     npm run format:check
     npm run build
@@ -129,12 +137,10 @@ verify_shared() {
   echo "==> verify $pkg"
   (
     cd "$root_dir/$pkg"
-    if [ "$SKIP_INSTALL" -eq 0 ]; then
-      npm ci
-    fi
     npm run lint
     npm run format:check
     npm run build
+    npm test
   )
 }
 
@@ -158,6 +164,11 @@ fi
 if [ ${#packages[@]} -eq 0 ]; then
   echo "==> verify runtime packages (skipped: no relevant package changes)"
 else
+  # Install all workspace dependencies from root (deduplicates node_modules)
+  if [ "$SKIP_INSTALL" -eq 0 ]; then
+    echo "==> npm install (workspaces)"
+    (cd "$root_dir" && npm install --ignore-scripts)
+  fi
   verify_shared
 fi
 
@@ -176,7 +187,7 @@ if [[ "${DRIFT_BENCHMARK:-0}" == "1" ]]; then
   node "$root_dir/scripts/eval/drift-benchmark.mjs" --root "$root_dir"
 fi
 
-echo "==> verify summary"
+step_info "verify summary"
 if [ "$CHANGED_ONLY" -eq 1 ]; then
   echo "mode: changed-only (base=$CHANGED_BASE)"
 else
@@ -187,4 +198,5 @@ if [ ${#packages[@]} -eq 0 ]; then
 else
   echo "packages: ${packages[*]}"
 fi
-echo "duration_s: $SECONDS"
+echo -e "duration_s: ${BOLD}${SECONDS}${NC}"
+step_ok "all checks passed"

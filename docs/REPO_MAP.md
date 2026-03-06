@@ -13,6 +13,9 @@
 - `adapters/` — canonical per-runner orchestration adapters + adapter manifest.
 - `adapters/templates/` — source templates for generated adapter/mirror files.
 - `.codex/skills/` — playbook skills (agent guidance); index in `.codex/skills/README.md`. Other `.codex/` subdirs are excluded from this map.
+- `.claude/rules/` — Claude Code path-specific rules (auto-load on matching file paths).
+- `.claude/skills/` — Claude Code native skills (slash commands delegating to adapter skills).
+- `.claude/commands/` — Claude Code convenience commands (verify, init-pipeline, regen-adapters, pipeline-status).
 - `deprecated/` — local-only retirement area for obsolete files (gitignored; not part of repository).
 - `docs/` — runbook, repo map, skill template, decisions.
 - `docs/INDEX.md` — canonical docs navigation.
@@ -44,6 +47,6 @@
 - Tool contracts live in `contracts/*.schema.json` and are referenced by runtime skills and tool definitions.
 - Tool definitions live in `agent-config/tool-definitions/tools.generated.json`.
 - Adapter generation/sync: `scripts/adapters/generate_adapters.py` renders `adapters/<runner>/skills/*`, legacy mirrors (`.codex/.cursor`), and runner root entry files; `scripts/check-adapter-sync.sh` enforces sync in verify.
-- Skill validation: `scripts/skills/validate_skills.py` enforces SKILL.md frontmatter and structure across manifest-declared skill roots (`scripts/codex/validate_skills.py` remains a compatibility wrapper).
+- Skill validation: `scripts/skills/validate_skills.py` enforces SKILL.md frontmatter and structure across manifest-declared skill roots.
 - Release-readiness contract: `contracts/artifacts/release-readiness.schema.json` defines final go/no-go evidence requirements.
 - Security orchestration contract: `contracts/artifacts/quality-report.schema.json` requires `security_audit` for `audit_type=security`, including coverage checklist, fix-loop evidence, and accepted-risk signoff metadata.

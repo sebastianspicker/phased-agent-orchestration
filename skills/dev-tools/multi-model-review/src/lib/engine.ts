@@ -16,7 +16,7 @@ import type { ReviewerFindings } from "./models/types.js";
 import { deduplicateFindings, type TaggedFinding } from "./dedup.js";
 import { analyzeCostBenefit } from "./cost-benefit.js";
 import { detectDrift, detectDriftFromExtractorClaims, type DriftDetectionResult } from "./drift.js";
-import { badInput } from "./input.js";
+import { badInput } from "@coding-agents-space/shared";
 export { validateInput } from "./input.js";
 
 interface RunDriftDetectOptions {

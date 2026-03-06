@@ -20,6 +20,9 @@ This repo implements a phased AI orchestration pipeline with two layers:
 - `scripts/pipeline-init.sh` — initialize a pipeline run.
 - `scripts/eval/` — matrix execution + evaluation aggregation scripts.
 - `docs/pipeline/` — pipeline state template.
+- `.claude/rules/` — Claude Code path-specific rules (auto-load when matching files are touched).
+- `.claude/skills/` — Claude Code native skills (slash commands: `/pipeline`, `/arm`, `/design`, `/ar`, `/plan`, `/pmatch`, `/build`, `/verify`, `/status`).
+- `.claude/commands/` — Claude Code convenience commands (`/verify`, `/init-pipeline`, `/regen-adapters`, `/pipeline-status`).
 - `deprecated/` — local-only holding area for retired files (git-ignored, not part of repo).
 
 ## Verify changes

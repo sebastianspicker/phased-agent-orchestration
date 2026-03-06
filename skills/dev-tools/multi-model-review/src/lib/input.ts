@@ -1,14 +1,11 @@
 import path from "node:path";
+import { badInput } from "@coding-agents-space/shared";
 import type { DriftConfig, DriftMode, Input } from "../types.js";
 import type { ReviewerFindings } from "./models/types.js";
 
 const REVIEW_SEVERITIES = new Set(["critical", "high", "medium", "low", "info"]);
 const DRIFT_VERIFICATION_STATUSES = new Set(["verified", "violated", "partial", "unverifiable"]);
 const DRIFT_CLAIM_TYPES = new Set(["interface", "invariant", "security", "performance", "docs"]);
-
-export function badInput(message: string): Error {
-  return Object.assign(new Error(message), { code: "E_BAD_INPUT" });
-}
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
