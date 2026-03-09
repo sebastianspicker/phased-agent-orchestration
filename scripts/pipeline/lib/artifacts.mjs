@@ -1,6 +1,7 @@
 /**
  * Phase-specific artifact builders and defaults.
  */
+import { badInput } from "./errors.mjs";
 import { nowIso } from "./trace.mjs";
 import { toNumber, coalesce } from "./utils.mjs";
 
@@ -38,7 +39,7 @@ export function phaseArtifactDefaults(phase) {
     case "release-readiness":
       return { artifactRef: "release-readiness.json", schemaRef: DEFAULT_SCHEMA_BY_PHASE[phase] };
     default:
-      return { artifactRef: `${phase}.json`, schemaRef: null };
+      throw badInput(`unknown phase: ${phase}`);
   }
 }
 

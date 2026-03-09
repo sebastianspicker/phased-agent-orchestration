@@ -46,6 +46,22 @@ export function spawnSkillTool({
 
   const toolKey = toolName.toUpperCase().replace(/-/g, "_");
 
+  if (proc.error) {
+    const isTimeout = proc.error.code === "ETIMEDOUT";
+    const msg = isTimeout
+      ? `${toolName} timed out after ${timeoutMs}ms`
+      : `${toolName} failed to spawn: ${proc.error.message}`;
+    const err = new Error(msg);
+    err.code = `E_${toolKey}_${isTimeout ? "TIMEOUT" : "SPAWN"}`;
+    throw err;
+  }
+
+  if (proc.signal) {
+    const err = new Error(`${toolName} killed by signal ${proc.signal}`);
+    err.code = `E_${toolKey}_SIGNAL`;
+    throw err;
+  }
+
   const rawOut = proc.stdout || proc.stderr;
   if (!rawOut) {
     const err = new Error(`${toolName} returned empty output`);

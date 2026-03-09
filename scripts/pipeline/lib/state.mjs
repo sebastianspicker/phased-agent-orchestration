@@ -155,6 +155,9 @@ export function phaseToArtifactKey(phase) {
   if (phase === "adversarial-review") return "review";
   if (phase === "plan") return "plan";
   if (phase === "pmatch") return "drift_reports";
+  if (phase === "build") return "build";
+  if (phase === "release-readiness") return "release_readiness";
+  if (phase === "post-build") return "post_build";
   if (phase.startsWith("quality") || phase === "security-review" || phase === "denoise") {
     return "quality_reports";
   }

@@ -274,9 +274,10 @@ export function evaluateTraceabilityGate({ runId, phase, state, resolveArtifactR
   const briefRef = state?.artifacts?.brief ?? "brief.json";
   const planRef = state?.artifacts?.plan ?? "plan.json";
   const designRef = state?.artifacts?.design ?? "design.json";
-  const driftRef = Array.isArray(state?.artifacts?.drift_reports)
-    ? state.artifacts.drift_reports[state.artifacts.drift_reports.length - 1]
-    : null;
+  const driftRef =
+    Array.isArray(state?.artifacts?.drift_reports) && state.artifacts.drift_reports.length > 0
+      ? state.artifacts.drift_reports[state.artifacts.drift_reports.length - 1]
+      : null;
   const briefAbs = resolveArtifactRef(runId, briefRef);
   const planAbs = resolveArtifactRef(runId, planRef);
   const designAbs = resolveOptionalArtifactRef(runId, designRef);

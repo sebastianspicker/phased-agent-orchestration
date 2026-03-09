@@ -36,8 +36,8 @@
             }
           }
         },
-        "token_estimate": { "type": "number", "minimum": 0 },
-        "char_count_estimate": { "type": "number", "minimum": 0 }
+        "token_estimate": { "type": "integer", "minimum": 0 },
+        "char_count_estimate": { "type": "integer", "minimum": 0 }
       }
     }
   }

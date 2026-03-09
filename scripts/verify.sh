@@ -116,6 +116,11 @@ selected_packages_from_changes() {
 
 run_core_checks
 
+# Runner CLI smoke test
+step_info "runner CLI smoke test"
+node "$root_dir/scripts/pipeline/runner.mjs" --help >/dev/null 2>&1 || { step_fail "runner CLI smoke test"; exit 1; }
+step_ok "runner CLI loads successfully"
+
 export SKIP_INSTALL
 export root_dir
 
