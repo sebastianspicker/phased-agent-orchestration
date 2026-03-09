@@ -45,6 +45,9 @@ cat > "$pipeline_dir/pipeline-state.json" <<EOF
     "design": null,
     "review": null,
     "plan": null,
+    "build": null,
+    "post_build": null,
+    "release_readiness": null,
     "drift_reports": [],
     "quality_reports": []
   },

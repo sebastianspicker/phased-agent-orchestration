@@ -24,10 +24,10 @@ describe("phaseArtifactDefaults", () => {
     expect(schemaRef).toContain("execution-plan");
   });
 
-  it("returns null schemaRef for build phase", () => {
+  it("returns build-report schema for build phase", () => {
     const { artifactRef, schemaRef } = phaseArtifactDefaults("build");
     expect(artifactRef).toBe("build.json");
-    expect(schemaRef).toBeNull();
+    expect(schemaRef).toBe("contracts/artifacts/build-report.schema.json");
   });
 
   it("returns null artifactRef for post-build phase", () => {

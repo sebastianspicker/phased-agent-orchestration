@@ -11,6 +11,7 @@ export const DEFAULT_SCHEMA_BY_PHASE = {
   "adversarial-review": "contracts/artifacts/review-report.schema.json",
   plan: "contracts/artifacts/execution-plan.schema.json",
   pmatch: "contracts/artifacts/drift-report.schema.json",
+  build: "contracts/artifacts/build-report.schema.json",
   "quality-static": "contracts/artifacts/quality-report.schema.json",
   "quality-tests": "contracts/artifacts/quality-report.schema.json",
   "release-readiness": "contracts/artifacts/release-readiness.schema.json",
@@ -29,7 +30,7 @@ export function phaseArtifactDefaults(phase) {
     case "pmatch":
       return { artifactRef: "drift-reports/pmatch.json", schemaRef: DEFAULT_SCHEMA_BY_PHASE[phase] };
     case "build":
-      return { artifactRef: "build.json", schemaRef: null };
+      return { artifactRef: "build.json", schemaRef: DEFAULT_SCHEMA_BY_PHASE[phase] };
     case "quality-static":
       return { artifactRef: "quality-reports/static.json", schemaRef: DEFAULT_SCHEMA_BY_PHASE[phase] };
     case "quality-tests":

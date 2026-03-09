@@ -482,8 +482,12 @@ function main() {
 
 const ERROR_HINTS = {
   E_QUALITY_GATE_MISSING: "Hint: Run 'npm run build' in skills/dev-tools/quality-gate/",
-  E_COLLECTOR_MISSING: "Hint: Run 'npm run build' in skills/dev-tools/trace-collector/",
+  E_QUALITY_GATE_TIMEOUT: "Hint: Quality-gate subprocess timed out. Check for large artifacts or increase timeout.",
+  E_QUALITY_GATE_SIGNAL: "Hint: Quality-gate subprocess was killed. Check system resources.",
+  E_TRACE_COLLECTOR_MISSING: "Hint: Run 'npm run build' in skills/dev-tools/trace-collector/",
+  E_TRACE_COLLECTOR_TIMEOUT: "Hint: Trace-collector subprocess timed out. Check trace.jsonl size.",
   E_BAD_INPUT: "Hint: Run 'node scripts/pipeline/runner.mjs --help' for usage",
+  E_BAD_TRACE: "Hint: Check trace.jsonl for malformed lines.",
 };
 
 try {
