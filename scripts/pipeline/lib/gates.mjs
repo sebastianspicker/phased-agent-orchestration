@@ -3,6 +3,7 @@
  */
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { SKILL_ENTRYPOINTS } from "../../lib/constants.mjs";
 import { badInput } from "./errors.mjs";
 import { spawnSkillTool } from "./subprocess.mjs";
 import { coalesce } from "./utils.mjs";
@@ -165,7 +166,7 @@ export function emitRetryEventIfNeeded(runId, phase) {
 
 export function runQualityGate(input) {
   return spawnSkillTool({
-    entrypoint: "skills/dev-tools/quality-gate/dist/index.js",
+    entrypoint: SKILL_ENTRYPOINTS.quality_gate,
     input,
     toolName: "quality-gate",
   });

@@ -42,7 +42,22 @@ export function readJson(path, fallback = null) {
   if (!existsSync(path)) {
     return fallback;
   }
-  return JSON.parse(readFileSync(path, "utf8"));
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch (e) {
+    throw badInput(`failed to parse JSON at ${path}: ${e.message}`);
+  }
+}
+
+export function readJsonStrict(path, context = path) {
+  if (!existsSync(path)) {
+    throw badInput(`file not found: ${context}`);
+  }
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch (e) {
+    throw badInput(`failed to parse JSON at ${context}: ${e.message}`);
+  }
 }
 
 export function writeJson(path, value) {

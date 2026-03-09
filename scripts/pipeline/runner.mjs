@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from "node:fs";
-import { CONFIG_IDS as CONFIG_ID_LIST, PHASE_ORDER } from "../lib/constants.mjs";
+import { existsSync } from "node:fs";
+import { CONFIG_IDS as CONFIG_ID_LIST, DEFAULT_CONFIG_ID, PHASE_ORDER } from "../lib/constants.mjs";
 import { badInput } from "./lib/errors.mjs";
 import { toNumber, coalesce, mergeStageProfile } from "./lib/utils.mjs";
 import {
@@ -9,6 +9,7 @@ import {
   getRepoRoot,
   getRunDir,
   loadPipelineState,
+  readJsonStrict,
   resolveWithinDirectory,
   resolveWithinRepo,
   savePipelineState,
@@ -87,12 +88,7 @@ function loadTasksetTask(tasksetRef, taskId) {
   if (!tasksetRef) return null;
   const root = getRepoRoot();
   const tasksetPath = resolveWithinRepo(tasksetRef, root);
-  let data;
-  try {
-    data = JSON.parse(readFileSync(tasksetPath, "utf8"));
-  } catch (parseErr) {
-    throw badInput(`failed to read taskset ${tasksetRef}: ${parseErr.message}`);
-  }
+  const data = readJsonStrict(tasksetPath, `taskset ${tasksetRef}`);
   if (!Array.isArray(data.tasks) || data.tasks.length === 0) {
     throw badInput(`taskset has no tasks: ${tasksetRef}`);
   }
@@ -218,7 +214,7 @@ function runStage(options) {
     throw badInput(`unsupported phase: ${phase}`);
   }
 
-  const configId = options["config-id"] || "phased_default";
+  const configId = options["config-id"] || DEFAULT_CONFIG_ID;
   if (!CONFIG_IDS.has(configId)) {
     throw badInput(`unsupported config-id: ${configId}`);
   }
@@ -281,11 +277,7 @@ function runStage(options) {
         artifact_ref: toWorkspaceRelative(inputAbs),
         status: "ok",
       });
-      try {
-        artifact = JSON.parse(readFileSync(inputAbs, "utf8"));
-      } catch (parseErr) {
-        throw badInput(`failed to read input artifact ${options["input-artifact"]}: ${parseErr.message}`);
-      }
+      artifact = readJsonStrict(inputAbs, `input artifact ${options["input-artifact"]}`);
       writeJson(artifactAbs, artifact);
       wroteArtifact = true;
     } else {
@@ -308,11 +300,7 @@ function runStage(options) {
           artifact_ref: toWorkspaceRelative(artifactAbs),
           status: "ok",
         });
-        try {
-          artifact = JSON.parse(readFileSync(artifactAbs, "utf8"));
-        } catch (parseErr) {
-          throw badInput(`failed to read artifact ${artifactRef}: ${parseErr.message}`);
-        }
+        artifact = readJsonStrict(artifactAbs, `artifact ${artifactRef}`);
       }
     }
 

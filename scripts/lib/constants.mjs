@@ -19,3 +19,12 @@ export const CONFIG_IDS = [
   "phased_dual_extractor_drift",
 ];
 
+export const DEFAULT_CONFIG_ID = "phased_default";
+
+export const PIPELINE_DIR = ".pipeline";
+
+export const SKILL_ENTRYPOINTS = {
+  quality_gate: "skills/dev-tools/quality-gate/dist/index.js",
+  trace_collector: "skills/dev-tools/trace-collector/dist/index.js",
+};
+

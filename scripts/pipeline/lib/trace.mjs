@@ -8,6 +8,7 @@ import {
   writeJson,
 } from "./state.mjs";
 import { badInput, badTrace } from "./errors.mjs";
+import { SKILL_ENTRYPOINTS } from "../../lib/constants.mjs";
 import { spawnSkillTool } from "./subprocess.mjs";
 
 export function nowIso() {
@@ -112,7 +113,7 @@ export function summarizeEventsLocal(events) {
 
 function runTraceCollector(runId, root = getRepoRoot()) {
   return spawnSkillTool({
-    entrypoint: "skills/dev-tools/trace-collector/dist/index.js",
+    entrypoint: SKILL_ENTRYPOINTS.trace_collector,
     input: {
       run_id: runId,
       trace_path: toWorkspaceRelative(getTracePath(runId, root), root),

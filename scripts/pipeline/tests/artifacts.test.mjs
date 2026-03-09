@@ -3,6 +3,9 @@ import { PHASE_ORDER } from "../../lib/constants.mjs";
 import {
   phaseArtifactDefaults,
   DEFAULT_SCHEMA_BY_PHASE,
+  buildArtifactForPhase,
+  defaultRequirementIds,
+  driftStatusForConfig,
 } from "../lib/artifacts.mjs";
 
 describe("phaseArtifactDefaults", () => {
@@ -64,5 +67,133 @@ describe("DEFAULT_SCHEMA_BY_PHASE", () => {
     for (const [phase, schemaPath] of Object.entries(DEFAULT_SCHEMA_BY_PHASE)) {
       expect(schemaPath).toMatch(/^contracts\/artifacts\/.+\.schema\.json$/);
     }
+  });
+});
+
+describe("buildArtifactForPhase", () => {
+  const baseConfig = {
+    runId: "test-run",
+    configId: "phased_default",
+    task: { id: "t1", must_requirement_ids: ["REQ-001"] },
+    stageProfile: {},
+    policyDecision: null,
+    budget: null,
+  };
+
+  it("builds arm artifact with requirements", () => {
+    const result = buildArtifactForPhase({ ...baseConfig, phase: "arm" });
+    expect(result.requirements).toHaveLength(1);
+    expect(result.requirements[0].id).toBe("REQ-001");
+    expect(result.open_questions).toEqual([]);
+  });
+
+  it("builds design artifact with constraints", () => {
+    const result = buildArtifactForPhase({ ...baseConfig, phase: "design" });
+    expect(result.analysis).toBeDefined();
+    expect(result.constraints_classification).toHaveLength(1);
+  });
+
+  it("builds adversarial-review artifact with reviewers", () => {
+    const result = buildArtifactForPhase({
+      ...baseConfig,
+      phase: "adversarial-review",
+      policyDecision: { chosen_fanout: 2 },
+    });
+    expect(result.reviewers).toHaveLength(2);
+    expect(result.deduplicated_findings).toHaveLength(1);
+  });
+
+  it("builds plan artifact with task groups", () => {
+    const result = buildArtifactForPhase({ ...baseConfig, phase: "plan" });
+    expect(result.task_groups).toHaveLength(1);
+    expect(result.task_groups[0].tasks[0].covers_requirement_ids).toContain("REQ-001");
+  });
+
+  it("builds pmatch artifact with claims", () => {
+    const result = buildArtifactForPhase({ ...baseConfig, phase: "pmatch" });
+    expect(result.claims).toHaveLength(1);
+    expect(result.adjudication).toBeDefined();
+  });
+
+  it("builds build artifact with outputs", () => {
+    const result = buildArtifactForPhase({ ...baseConfig, phase: "build" });
+    expect(result.summary).toBeDefined();
+    expect(result.outputs.length).toBeGreaterThan(0);
+  });
+
+  it("builds quality-static artifact", () => {
+    const result = buildArtifactForPhase({ ...baseConfig, phase: "quality-static" });
+    expect(result.audit_type).toBe("static");
+    expect(result.violations).toEqual([]);
+  });
+
+  it("builds quality-tests artifact", () => {
+    const result = buildArtifactForPhase({ ...baseConfig, phase: "quality-tests" });
+    expect(result.audit_type).toBe("tests");
+  });
+
+  it("builds release-readiness artifact", () => {
+    const result = buildArtifactForPhase({ ...baseConfig, phase: "release-readiness" });
+    expect(result.release_decision).toBe("go");
+    expect(result.approvals).toHaveLength(1);
+  });
+
+  it("returns null for post-build phase", () => {
+    const result = buildArtifactForPhase({ ...baseConfig, phase: "post-build" });
+    expect(result).toBeNull();
+  });
+
+  it("returns null for unknown phase", () => {
+    const result = buildArtifactForPhase({ ...baseConfig, phase: "nonexistent" });
+    expect(result).toBeNull();
+  });
+
+  it("includes context_manifest when budget is provided", () => {
+    const result = buildArtifactForPhase({
+      ...baseConfig,
+      phase: "arm",
+      budget: { token_max: 4000, files_max: 10 },
+    });
+    expect(result.context_manifest).toBeDefined();
+    expect(result.context_manifest.token_estimate).toBeDefined();
+  });
+});
+
+describe("defaultRequirementIds", () => {
+  it("extracts must_requirement_ids from task", () => {
+    expect(defaultRequirementIds({ must_requirement_ids: ["R1", "R2"] })).toEqual(["R1", "R2"]);
+  });
+
+  it("falls back to REQ-001 for empty task", () => {
+    expect(defaultRequirementIds(null)).toEqual(["REQ-001"]);
+    expect(defaultRequirementIds({})).toEqual(["REQ-001"]);
+    expect(defaultRequirementIds({ must_requirement_ids: [] })).toEqual(["REQ-001"]);
+  });
+
+  it("filters non-string ids", () => {
+    expect(defaultRequirementIds({ must_requirement_ids: ["R1", "", null, "R2"] })).toEqual(["R1", "R2"]);
+  });
+});
+
+describe("driftStatusForConfig", () => {
+  it("returns stageProfile override when present", () => {
+    expect(driftStatusForConfig("phased_default", { drift_status: "verified" })).toBe("verified");
+  });
+
+  it("returns violated for baseline_single_agent", () => {
+    expect(driftStatusForConfig("baseline_single_agent", {})).toBe("violated");
+  });
+
+  it("returns verified for phased_dual_extractor_drift", () => {
+    expect(driftStatusForConfig("phased_dual_extractor_drift", {})).toBe("verified");
+  });
+
+  it("returns partial for other phased configs", () => {
+    expect(driftStatusForConfig("phased_plus_reviewers", {})).toBe("partial");
+    expect(driftStatusForConfig("phased_with_context_budgets", {})).toBe("partial");
+  });
+
+  it("returns partial for unknown config", () => {
+    expect(driftStatusForConfig("unknown", {})).toBe("partial");
   });
 });

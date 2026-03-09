@@ -1,9 +1,14 @@
 import { describe, it, expect } from "vitest";
+import { existsSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   phaseToArtifactKey,
   getRunDir,
+  getRepoRoot,
   gateFileNameForPhase,
   parseBooleanFlag,
+  readJson,
+  readJsonStrict,
 } from "../lib/state.mjs";
 
 describe("phaseToArtifactKey", () => {
@@ -118,5 +123,58 @@ describe("parseBooleanFlag", () => {
   it("returns false for undefined/null", () => {
     expect(parseBooleanFlag(undefined)).toBe(false);
     expect(parseBooleanFlag(null)).toBe(false);
+  });
+});
+
+describe("readJson", () => {
+  it("returns fallback for non-existent file", () => {
+    expect(readJson("/tmp/nonexistent-test-file.json")).toBeNull();
+    expect(readJson("/tmp/nonexistent-test-file.json", { default: true })).toEqual({ default: true });
+  });
+
+  it("parses valid JSON file", () => {
+    const path = "/tmp/test-readjson-valid.json";
+    writeFileSync(path, '{"key": "value"}', "utf8");
+    try {
+      expect(readJson(path)).toEqual({ key: "value" });
+    } finally {
+      rmSync(path, { force: true });
+    }
+  });
+
+  it("throws on malformed JSON", () => {
+    const path = "/tmp/test-readjson-invalid.json";
+    writeFileSync(path, "{broken json", "utf8");
+    try {
+      expect(() => readJson(path)).toThrow(/failed to parse JSON/);
+    } finally {
+      rmSync(path, { force: true });
+    }
+  });
+});
+
+describe("readJsonStrict", () => {
+  it("throws for non-existent file", () => {
+    expect(() => readJsonStrict("/tmp/nonexistent-strict.json")).toThrow(/file not found/);
+  });
+
+  it("throws on malformed JSON with context", () => {
+    const path = "/tmp/test-readjsonstrict-invalid.json";
+    writeFileSync(path, "not json", "utf8");
+    try {
+      expect(() => readJsonStrict(path, "test artifact")).toThrow(/test artifact/);
+    } finally {
+      rmSync(path, { force: true });
+    }
+  });
+
+  it("returns parsed JSON for valid file", () => {
+    const path = "/tmp/test-readjsonstrict-valid.json";
+    writeFileSync(path, '{"ok": true}', "utf8");
+    try {
+      expect(readJsonStrict(path)).toEqual({ ok: true });
+    } finally {
+      rmSync(path, { force: true });
+    }
   });
 });
