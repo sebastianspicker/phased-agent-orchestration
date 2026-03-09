@@ -136,7 +136,8 @@ else:
             failures.append("core_playbook path must be a string")
         else:
             core_playbook_path = resolve_repo_path(core_playbook, "core playbook")
-            if core_playbook_path is not None:
+            # Skip if file does not exist (may be gitignored local-only)
+            if core_playbook_path is not None and core_playbook_path.exists():
                 assert_order(core_playbook_path, stage_order, "core playbook")
 
 if not quality_gate_path.exists():
