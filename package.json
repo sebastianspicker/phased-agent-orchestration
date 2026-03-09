@@ -5,5 +5,9 @@
     "skills/dev-tools/quality-gate",
     "skills/dev-tools/multi-model-review",
     "skills/dev-tools/trace-collector"
-  ]
+  ],
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "vitest": "4.0.18"
+  }
 }
