@@ -116,6 +116,12 @@ selected_packages_from_changes() {
 
 run_core_checks
 
+# Install workspace dependencies early (needed by runner lib tests and package verification)
+if [ "$SKIP_INSTALL" -eq 0 ]; then
+  echo "==> npm install (workspaces)"
+  (cd "$root_dir" && npm install --ignore-scripts)
+fi
+
 # Runner CLI smoke test
 step_info "runner CLI smoke test"
 node "$root_dir/scripts/pipeline/runner.mjs" --help >/dev/null 2>&1 || { step_fail "runner CLI smoke test"; exit 1; }
@@ -174,11 +180,6 @@ fi
 if [ ${#packages[@]} -eq 0 ]; then
   echo "==> verify runtime packages (skipped: no relevant package changes)"
 else
-  # Install all workspace dependencies from root (deduplicates node_modules)
-  if [ "$SKIP_INSTALL" -eq 0 ]; then
-    echo "==> npm install (workspaces)"
-    (cd "$root_dir" && npm install --ignore-scripts)
-  fi
   verify_shared
 fi
 
