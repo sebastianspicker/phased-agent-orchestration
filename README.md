@@ -15,8 +15,28 @@ AI-assisted development workflows typically fail for predictable reasons:
 
 A 10-stage pipeline with strict gates, scoped context, and explicit handoffs:
 
-```
-arm → design → adversarial-review → plan → pmatch → build → quality-static → quality-tests → post-build → release-readiness
+```mermaid
+flowchart LR
+  A[arm] --> B[design]
+  B --> C[adversarial\nreview]
+  C --> D[plan]
+  D --> E[pmatch]
+  E --> F[build]
+  F --> G[quality\nstatic]
+  G --> H[quality\ntests]
+  H --> I[post\nbuild]
+  I --> J[release\nreadiness]
+
+  style A fill:#4a9eff,color:#fff
+  style B fill:#4a9eff,color:#fff
+  style C fill:#ff6b6b,color:#fff
+  style D fill:#4a9eff,color:#fff
+  style E fill:#ffa94d,color:#fff
+  style F fill:#51cf66,color:#fff
+  style G fill:#ffa94d,color:#fff
+  style H fill:#ffa94d,color:#fff
+  style I fill:#ffa94d,color:#fff
+  style J fill:#4a9eff,color:#fff
 ```
 
 | Stage | Purpose | Output |
@@ -32,6 +52,48 @@ arm → design → adversarial-review → plan → pmatch → build → quality-
 | **Post-Build** (`post-build`) | Security review, denoise, and audit aggregation | `postbuild-gate.json` |
 | **Release Readiness** (`release-readiness`) | Semver, changelog, migration, rollback, and approvals | `release-readiness-gate.json` |
 
+### Pipeline Flow with Gates and Human Checkpoints
+
+```mermaid
+flowchart TB
+  A["Idea input"] --> B["Intake: brief formation"]
+  B --> B_G{"Gate pass?"}
+  B_G -- No --> B
+  B_G -- Yes --> B_H["Human checkpoint:\nbrief approval"]
+
+  B_H --> C["Design: evidence-backed architecture"]
+  C --> C_G{"Gate pass?"}
+  C_G -- No --> C
+  C_G -- Yes --> C_H["Human checkpoint:\ndesign alignment"]
+
+  C_H --> D["Adversarial Review: parallel specialists"]
+  D --> D_G{"Critical findings?"}
+  D_G -- Yes --> D
+  D_G -- No --> D_H["Human checkpoint:\nreview acceptance"]
+
+  D_H --> E["Plan: deterministic task groups"]
+  E --> E_G{"Gate pass?"}
+  E_G -- No --> E
+
+  E_G -- Yes --> F["Drift Match: dual-extractor adjudication"]
+  F --> F_G{"Drift gate pass?"}
+  F_G -- No --> E
+  F_G -- Yes --> G["Build: parallel scoped implementation"]
+  G --> G_G{"Build gate pass?"}
+  G_G -- No --> E
+  G_G -- Yes --> H["Quality Static + Tests"]
+  H --> H_G{"Quality gates pass?"}
+  H_G -- No --> G
+  H_G -- Yes --> I["Post-Build: security + audits"]
+  I --> I_G{"Post-build gate pass?"}
+  I_G -- No --> I_R["Targeted remediation"]
+  I_R --> I
+  I_G -- Yes --> J["Release Readiness: ship decision"]
+  J --> J_G{"Release gate pass?"}
+  J_G -- No --> I_R
+  J_G -- Yes --> K["Ready to ship"]
+```
+
 ## Key Design Principles
 
 1. **Context scoping over context stuffing.** Each stage gets only the artifacts it needs, not the full conversation history. More context is not always better — information density matters.
@@ -44,17 +106,50 @@ arm → design → adversarial-review → plan → pmatch → build → quality-
 
 ## Architecture
 
-The system has two layers:
+The system has two layers: **orchestration adapters** (agent guidance) and **runtime skills** (deterministic validation). A shared contract layer connects them.
 
-- **Orchestration adapters** — agent guidance documents for 5 runners (Claude, Codex, Cursor, Gemini, Kilo), generated from shared templates
-- **Runtime skills** — deterministic Node.js packages that perform validation, review, and trace collection (no model API calls)
+```mermaid
+flowchart TB
+  subgraph Templates["Source of Truth"]
+    T["adapters/templates/\n10 stage templates"]
+  end
 
-```
-adapters/templates/     → source of truth for stage guidance
-adapters/<runner>/      → generated per-runner stage adapters
-contracts/artifacts/    → JSON Schema validation for all artifacts
-skills/dev-tools/       → runtime validation packages
-scripts/pipeline/       → pipeline runner CLI
+  subgraph Adapters["Generated Adapters"]
+    direction LR
+    Claude["Claude"]
+    Codex["Codex"]
+    Cursor["Cursor"]
+    Gemini["Gemini"]
+    Kilo["Kilo"]
+  end
+
+  subgraph Contracts["contracts/"]
+    direction LR
+    AS["Artifact Schemas\n(brief, design, plan, ...)"]
+    QG["Quality Gate\nSchema"]
+  end
+
+  subgraph Skills["Runtime Skills (Node.js)"]
+    direction LR
+    QGS["quality-gate\nschema + criteria"]
+    MMR["multi-model-review\ndedup + drift"]
+    TC["trace-collector\nevents + summaries"]
+  end
+
+  subgraph Runner["Pipeline Runner"]
+    CLI["scripts/pipeline/runner.mjs\nrun-stage · summarize-run"]
+  end
+
+  T -->|generate| Adapters
+  Adapters -->|guide agent through stages| Runner
+  Runner -->|validate artifacts| Skills
+  Skills -->|enforce| Contracts
+  Runner -->|read/write| State[".pipeline/runs/\nartifacts + gates + traces"]
+
+  style Templates fill:#4a9eff,color:#fff
+  style Contracts fill:#ffa94d,color:#fff
+  style Skills fill:#51cf66,color:#fff
+  style Runner fill:#ff6b6b,color:#fff
 ```
 
 ### Runtime Skills
