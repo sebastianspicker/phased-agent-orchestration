@@ -45,7 +45,7 @@ step_fail() { echo -e "${RED}FAIL${NC}: $1"; }
 step_info() { echo -e "${BOLD}==> $1${NC}"; }
 
 run_core_checks() {
-  python3 "$root_dir/scripts/skills/validate_skills.py" --manifest "$root_dir/adapters/spec/adapter-manifest.json" --root "$root_dir/.codex/skills" --root "$root_dir/.claude/skills"
+  python3 "$root_dir/scripts/skills/validate_skills.py" --manifest "$root_dir/adapters/spec/adapter-manifest.json"
   "$root_dir/scripts/check-no-stale-refs.sh"
   "$root_dir/scripts/check-repo-hygiene.sh"
   python3 "$root_dir/scripts/check-markdown-links.py" --root "$root_dir"
