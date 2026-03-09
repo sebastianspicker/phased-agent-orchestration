@@ -3,6 +3,7 @@
  */
 
 export function toNumber(value, fallback) {
+  if (value === undefined || value === "" || value === null) return fallback;
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
 }

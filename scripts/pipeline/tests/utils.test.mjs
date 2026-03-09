@@ -11,8 +11,8 @@ describe("toNumber", () => {
     expect(toNumber("abc", 99)).toBe(99);
   });
 
-  it("treats empty string as 0 (Number coercion)", () => {
-    expect(toNumber("", 99)).toBe(0);
+  it("returns fallback for empty string", () => {
+    expect(toNumber("", 99)).toBe(99);
   });
 
   it("returns fallback for NaN and Infinity", () => {
@@ -27,8 +27,8 @@ describe("toNumber", () => {
     expect(toNumber(-1, 99)).toBe(-1);
   });
 
-  it("treats null as 0 (Number coercion)", () => {
-    expect(toNumber(null, 10)).toBe(0);
+  it("returns fallback for null", () => {
+    expect(toNumber(null, 10)).toBe(10);
   });
 
   it("returns fallback for undefined", () => {

@@ -131,15 +131,15 @@ export function runSummarizeRun(options, { requireOption, ensureStateForRun, app
 
   const jsonPayload = { success: true, run_id: runId, summary };
 
+  const gatePass = summary.gate_results?.pass ?? 0;
+  const gateFail = summary.gate_results?.fail ?? 0;
+  const gateWarn = summary.gate_results?.warn ?? 0;
+  const issues = Array.isArray(summary.issues) ? summary.issues : [];
+  const phaseDurations = summary.phase_durations_ms ?? {};
+  const activePhases = PHASES.filter((p) => phaseDurations[p] !== undefined);
+
   const renderText = () => {
-    const gatePass = summary.gate_results?.pass ?? 0;
-    const gateFail = summary.gate_results?.fail ?? 0;
-    const gateWarn = summary.gate_results?.warn ?? 0;
-    const issues = Array.isArray(summary.issues) ? summary.issues : [];
-    const phaseDurations = summary.phase_durations_ms ?? {};
-    const phaseLines = PHASES.filter((phase) => phaseDurations[phase] !== undefined).map(
-      (phase) => `  - ${phase}: ${phaseDurations[phase]} ms`,
-    );
+    const phaseLines = activePhases.map((p) => `  - ${p}: ${phaseDurations[p]} ms`);
 
     return [
       `Run summary: ${runId}`,
@@ -158,14 +158,7 @@ export function runSummarizeRun(options, { requireOption, ensureStateForRun, app
   };
 
   const renderMarkdown = () => {
-    const gatePass = summary.gate_results?.pass ?? 0;
-    const gateFail = summary.gate_results?.fail ?? 0;
-    const gateWarn = summary.gate_results?.warn ?? 0;
-    const issues = Array.isArray(summary.issues) ? summary.issues : [];
-    const phaseDurations = summary.phase_durations_ms ?? {};
-    const phaseRows = PHASES.filter((phase) => phaseDurations[phase] !== undefined).map(
-      (phase) => `| ${phase} | ${phaseDurations[phase]} |`,
-    );
+    const phaseRows = activePhases.map((p) => `| ${p} | ${phaseDurations[p]} |`);
 
     return [
       `# Run Summary: ${runId}`,

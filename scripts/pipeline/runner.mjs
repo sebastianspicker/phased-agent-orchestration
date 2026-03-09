@@ -207,6 +207,181 @@ function appendRunEndIfMissing(runId, state) {
   }
 }
 
+function resolveAndWriteArtifact({ runId, phase, configId, options, taskContext, stageProfile, policyDecision, state }) {
+  const defaults = phaseArtifactDefaults(phase);
+  let artifactRef = options["artifact-ref"] || defaults.artifactRef;
+  const schemaRef = options["schema-ref"] || defaults.schemaRef;
+  let artifact = null;
+  let wroteArtifact = false;
+
+  if (artifactRef) {
+    const artifactAbs = resolveArtifactRefForRun(runId, artifactRef);
+    const budget = contextBudgetForPhase(phaseTokenForContextBudget(phase), state);
+
+    if (options["input-artifact"]) {
+      const inputAbs = resolveWithinRepo(options["input-artifact"]);
+      appendTraceEvent(runId, {
+        event: "artifact_read",
+        phase,
+        artifact_ref: toWorkspaceRelative(inputAbs),
+        status: "ok",
+      });
+      artifact = readJsonStrict(inputAbs, `input artifact ${options["input-artifact"]}`);
+      writeJson(artifactAbs, artifact);
+      wroteArtifact = true;
+    } else {
+      artifact = buildArtifactForPhase({
+        phase,
+        runId,
+        configId,
+        task: taskContext?.task,
+        stageProfile,
+        policyDecision,
+        budget,
+      });
+      if (artifact) {
+        writeJson(artifactAbs, artifact);
+        wroteArtifact = true;
+      } else if (existsSync(artifactAbs)) {
+        appendTraceEvent(runId, {
+          event: "artifact_read",
+          phase,
+          artifact_ref: toWorkspaceRelative(artifactAbs),
+          status: "ok",
+        });
+        artifact = readJsonStrict(artifactAbs, `artifact ${artifactRef}`);
+      }
+    }
+
+    if (wroteArtifact) {
+      appendTraceEvent(runId, {
+        event: "artifact_write",
+        phase,
+        artifact_ref: toWorkspaceRelative(artifactAbs),
+        status: "ok",
+      });
+    }
+
+    artifactRef = toWorkspaceRelative(artifactAbs);
+    if (artifact) {
+      updateStateAfterArtifact(state, phase, artifactRef);
+    }
+  }
+
+  return { artifact, artifactRef, schemaRef };
+}
+
+function evaluateAuxiliaryGates({ runId, phase, artifact, artifactRef, schemaRef, state }) {
+  const gateStatuses = [];
+  const extraGates = [];
+
+  const budget = contextBudgetForPhase(phaseTokenForContextBudget(phase), state);
+  if (artifact && budget) {
+    const budgetGate = evaluateContextBudgetGate({
+      runId,
+      phase,
+      artifact,
+      artifactRef: artifactRef || "n/a",
+      schemaRef,
+      state,
+      budget,
+    });
+    if (budgetGate) {
+      gateStatuses.push(budgetGate.status);
+      extraGates.push(budgetGate);
+    }
+  }
+
+  if (phase === "plan" || phase === "build") {
+    const traceabilityGate = evaluateTraceabilityGate({
+      runId,
+      phase,
+      state,
+      resolveArtifactRef: resolveArtifactRefForRun,
+      resolveOptionalArtifactRef: resolveOptionalArtifactRefForRun,
+    });
+    if (traceabilityGate) {
+      if (traceabilityGate.status === "fail") {
+        gateStatuses.push(traceabilityGate.status);
+      }
+      extraGates.push(traceabilityGate);
+    }
+  }
+
+  return { gateStatuses, extraGates };
+}
+
+function emitPrimaryGate({ runId, phase, artifact, artifactRef, schemaRef, configId, cognitiveTier, desiredStatus, gateStatuses }) {
+  if (artifact && schemaRef && QUALITY_GATE_PHASES.has(phase)) {
+    const gate = runQualityGate(stageGateInput({ phase, artifact, artifactRef, schemaRef }));
+    const stageStatus = worstStatus(gate.status, desiredStatus, ...gateStatuses);
+
+    return emitGate({
+      runId,
+      phase,
+      gateId: `${phase}-gate`,
+      status: stageStatus,
+      artifactRef: artifactRef || gate.artifact_ref,
+      criteria: gate.criteria,
+      blockingFailures: stageStatus === "fail" ? gate.blocking_failures : [],
+      schemaValidation: gate.schema_validation,
+      metadata: {
+        gate_type: "phase",
+        schema_ref: schemaRef,
+        config_id: configId,
+        cognitive_tier: cognitiveTier,
+      },
+      gateFileOverride: gateFileNameForPhase(phase),
+    });
+  }
+
+  const stageStatus = worstStatus(desiredStatus, ...gateStatuses);
+  return emitGate({
+    runId,
+    phase,
+    gateId: `${phase}-gate`,
+    status: stageStatus,
+    artifactRef: artifactRef || "n/a",
+    criteria: [],
+    blockingFailures: stageStatus === "fail" ? ["phase-status"] : [],
+    metadata: {
+      gate_type: "phase",
+      schema_ref: schemaRef,
+      config_id: configId,
+      cognitive_tier: cognitiveTier,
+    },
+    gateFileOverride: gateFileNameForPhase(phase),
+  });
+}
+
+function recordPhaseCompletion({ runId, phase, state, primaryGate }) {
+  appendTraceEvent(runId, {
+    event: "phase_end",
+    phase,
+    status: primaryGate.status === "fail" ? "error" : "ok",
+    metadata: {
+      gate_status: primaryGate.status,
+    },
+  });
+
+  state.current_phase = phase;
+  const completed = Array.isArray(state.completed_gates) ? state.completed_gates : [];
+  completed.push(primaryGate.gate_id);
+  state.completed_gates = [...new Set(completed)];
+  savePipelineState(state);
+
+  if (primaryGate.status === "fail") {
+    appendTraceEvent(runId, {
+      event: "error",
+      phase,
+      status: "error",
+      message: `${phase} gate failed`,
+      gate_id: primaryGate.gate_id,
+    });
+    process.exitCode = 1;
+  }
+}
+
 function runStage(options) {
   const runId = requireOption(options, "run-id");
   const phase = requireOption(options, "phase");
@@ -260,159 +435,21 @@ function runStage(options) {
     });
   }
 
-  const defaults = phaseArtifactDefaults(phase);
-  let artifactRef = options["artifact-ref"] || defaults.artifactRef;
-  const schemaRef = options["schema-ref"] || defaults.schemaRef;
-  let artifact = null;
-  let wroteArtifact = false;
-
-  if (artifactRef) {
-    const artifactAbs = resolveArtifactRefForRun(runId, artifactRef);
-
-    if (options["input-artifact"]) {
-      const inputAbs = resolveWithinRepo(options["input-artifact"]);
-      appendTraceEvent(runId, {
-        event: "artifact_read",
-        phase,
-        artifact_ref: toWorkspaceRelative(inputAbs),
-        status: "ok",
-      });
-      artifact = readJsonStrict(inputAbs, `input artifact ${options["input-artifact"]}`);
-      writeJson(artifactAbs, artifact);
-      wroteArtifact = true;
-    } else {
-      artifact = buildArtifactForPhase({
-        phase,
-        runId,
-        configId,
-        task: taskContext?.task,
-        stageProfile,
-        policyDecision,
-        budget: contextBudgetForPhase(phaseTokenForContextBudget(phase), state),
-      });
-      if (artifact) {
-        writeJson(artifactAbs, artifact);
-        wroteArtifact = true;
-      } else if (existsSync(artifactAbs)) {
-        appendTraceEvent(runId, {
-          event: "artifact_read",
-          phase,
-          artifact_ref: toWorkspaceRelative(artifactAbs),
-          status: "ok",
-        });
-        artifact = readJsonStrict(artifactAbs, `artifact ${artifactRef}`);
-      }
-    }
-
-    if (wroteArtifact) {
-      appendTraceEvent(runId, {
-        event: "artifact_write",
-        phase,
-        artifact_ref: toWorkspaceRelative(artifactAbs),
-        status: "ok",
-      });
-    }
-
-    artifactRef = toWorkspaceRelative(artifactAbs);
-    if (artifact) {
-      updateStateAfterArtifact(state, phase, artifactRef);
-    }
-  }
-
-  const gateStatuses = [];
-  const extraGates = [];
-
-  const budget = contextBudgetForPhase(phaseTokenForContextBudget(phase), state);
-  if (artifact && budget) {
-    const budgetGate = evaluateContextBudgetGate({
-      runId,
-      phase,
-      artifact,
-      artifactRef: artifactRef || "n/a",
-      schemaRef,
-      state,
-      budget,
-    });
-    if (budgetGate) {
-      gateStatuses.push(budgetGate.status);
-      extraGates.push(budgetGate);
-    }
-  }
-
-  if (phase === "plan" || phase === "build") {
-    const traceabilityGate = evaluateTraceabilityGate({
-      runId,
-      phase,
-      state,
-      resolveArtifactRef: resolveArtifactRefForRun,
-      resolveOptionalArtifactRef: resolveOptionalArtifactRefForRun,
-    });
-    if (traceabilityGate) {
-      if (traceabilityGate.status === "fail") {
-        gateStatuses.push(traceabilityGate.status);
-      }
-      extraGates.push(traceabilityGate);
-    }
-  }
-
-  const desiredStageStatus = options["gate-status"] || gateStatusFromPhaseAndProfile(phase, stageProfile);
-  let primaryGate = null;
-
-  if (artifact && schemaRef && QUALITY_GATE_PHASES.has(phase)) {
-    const gate = runQualityGate(stageGateInput({ phase, artifact, artifactRef, schemaRef }));
-    const stageStatus = worstStatus(gate.status, desiredStageStatus, ...gateStatuses);
-
-    primaryGate = emitGate({
-      runId,
-      phase,
-      gateId: `${phase}-gate`,
-      status: stageStatus,
-      artifactRef: artifactRef || gate.artifact_ref,
-      criteria: gate.criteria,
-      blockingFailures: stageStatus === "fail" ? gate.blocking_failures : [],
-      schemaValidation: gate.schema_validation,
-      metadata: {
-        gate_type: "phase",
-        schema_ref: schemaRef,
-        config_id: configId,
-        cognitive_tier: cognitiveTier,
-      },
-      gateFileOverride: gateFileNameForPhase(phase),
-    });
-  } else {
-    const stageStatus = worstStatus(desiredStageStatus, ...gateStatuses);
-    primaryGate = emitGate({
-      runId,
-      phase,
-      gateId: `${phase}-gate`,
-      status: stageStatus,
-      artifactRef: artifactRef || "n/a",
-      criteria: [],
-      blockingFailures: stageStatus === "fail" ? ["phase-status"] : [],
-      metadata: {
-        gate_type: "phase",
-        schema_ref: schemaRef,
-        config_id: configId,
-        cognitive_tier: cognitiveTier,
-      },
-      gateFileOverride: gateFileNameForPhase(phase),
-    });
-  }
-
-  appendTraceEvent(runId, {
-    event: "phase_end",
-    phase,
-    status: primaryGate.status === "fail" ? "error" : "ok",
-    metadata: {
-      gate_status: primaryGate.status,
-    },
+  const { artifact, artifactRef, schemaRef } = resolveAndWriteArtifact({
+    runId, phase, configId, options, taskContext, stageProfile, policyDecision, state,
   });
 
-  state.current_phase = phase;
-  const completed = Array.isArray(state.completed_gates) ? state.completed_gates : [];
-  completed.push(primaryGate.gate_id);
-  state.completed_gates = [...new Set(completed)];
-  savePipelineState(state);
+  const { gateStatuses, extraGates } = evaluateAuxiliaryGates({
+    runId, phase, artifact, artifactRef, schemaRef, state,
+  });
+
+  const desiredStatus = options["gate-status"] || gateStatusFromPhaseAndProfile(phase, stageProfile);
+
+  const primaryGate = emitPrimaryGate({
+    runId, phase, artifact, artifactRef, schemaRef, configId, cognitiveTier, desiredStatus, gateStatuses,
+  });
+
+  recordPhaseCompletion({ runId, phase, state, primaryGate });
 
   const result = {
     success: primaryGate.status !== "fail",
@@ -427,17 +464,6 @@ function runStage(options) {
   };
 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-
-  if (primaryGate.status === "fail") {
-    appendTraceEvent(runId, {
-      event: "error",
-      phase,
-      status: "error",
-      message: `${phase} gate failed`,
-      gate_id: primaryGate.gate_id,
-    });
-    process.exitCode = 1;
-  }
 }
 
 // Shared context passed to command functions
