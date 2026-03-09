@@ -13,6 +13,7 @@ description: "Run independent specialist reviews in parallel, consolidate findin
 Read and follow `adapters/claude/skills/orchestration-ar/SKILL.md`.
 
 ## Claude Code notes
+- **Model tiers: Lead uses high_reasoning (Opus) for synthesis and adjudication; reviewer subagents use fast (Haiku) for independent scoped critique.**
 - Use the Task tool to launch independent reviewer subagents in parallel — each reviewer should have isolated context.
 - Reviewers must not see each other's findings until consolidation.
 - After consolidation, present findings for human acceptance checkpoint.

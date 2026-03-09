@@ -25,6 +25,7 @@ Use a high-reasoning model.
 ### 1. Build task groups
 Partition work into independent groups (target 3-6 tasks/group, max 8).
 If a group falls outside 3-6 tasks, add `scope_override.reason` in that group and justify why.
+Assign `builder_tier` per group: `high_reasoning` for groups requiring architectural judgment or complex refactoring, `fast` for straightforward implementation tasks.
 
 ### 2. Assign file ownership
 Create explicit path->group mapping and remove overlaps.

@@ -28,6 +28,7 @@ Launch one Task subagent per task group. Each builder receives only:
 - required file excerpts,
 - relevant verification commands.
 - Enforce `config.orchestration_policy.max_builders` and active budget constraints from pipeline state.
+- Respect `builder_tier` from each task group in `plan.json` to select the appropriate model tier for that builder.
 
 ### 2. Supervise and unblock
 Lead tracks progress, resolves blockers, and enforces ownership boundaries. Lead does not author production code.

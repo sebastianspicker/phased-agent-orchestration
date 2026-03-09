@@ -30,7 +30,8 @@ Determine:
 - changelog completeness,
 - migration requirements and validation,
 - rollback strategy ownership and test evidence,
-- open risks and due dates.
+- open risks and due dates,
+- model tier compliance: verify that `high_reasoning` stages used capable models and `fast` stages used efficient models per `config.cognitive_tiers`.
 
 ### 2. Build artifact
 Write release-readiness artifact conforming to `contracts/artifacts/release-readiness.schema.json`:

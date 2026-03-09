@@ -95,5 +95,13 @@ Security risk acceptance is only allowed after:
 ## Context-transfer rule
 Each stage receives only the artifacts it needs. Do not transfer full conversational history across stages.
 
-## Canonical tiering note
-Prefer capability tiers (`high_reasoning`, `fast`) in pipeline config; keep model-specific names as adapter-level compatibility only.
+## Cognitive tier mapping
+The pipeline state `config.cognitive_tiers` assigns abstract tiers to stages. Adapters should map these to runner-specific models:
+
+| Tier | Stage roles |
+|------|------------|
+| `high_reasoning` | arm, design, plan, ar-lead, pmatch-adjudicator, build-lead, release-readiness |
+| `fast` | ar-reviewers, pmatch-extractors, build-workers, quality-static, quality-tests, post-build |
+
+Runners should document their tier-to-model mapping (e.g., Claude: Opus for `high_reasoning`, Haiku for `fast`).
+Prefer capability tiers in pipeline config; keep model-specific names as adapter-level mapping only.

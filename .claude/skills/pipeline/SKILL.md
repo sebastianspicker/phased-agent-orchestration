@@ -17,3 +17,6 @@ Read and follow `adapters/claude/skills/orchestration-pipeline/SKILL.md`.
 - Use `/status` to check pipeline state between stages.
 - Human checkpoints are enforced at: arm closure, design alignment, adversarial-review acceptance, and conditional/no-go release decisions.
 - Context-transfer rule: each stage receives only its required artifacts, not full conversation history.
+- **Model tier allocation** — read `config.cognitive_tiers` from pipeline state and apply:
+  - `high_reasoning` stages (arm, design, plan, release-readiness) and lead roles (ar, pmatch, build): use Opus.
+  - `fast` stages (quality-static, quality-tests, post-build) and worker roles (ar reviewers, pmatch extractors, build workers): use Haiku for subagents.

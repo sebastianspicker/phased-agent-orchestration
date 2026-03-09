@@ -105,6 +105,20 @@ function loadTasksetTask(tasksetRef, taskId) {
   return { taskset: data, task, taskset_path: toWorkspaceRelative(tasksetPath, root) };
 }
 
+function resolveCognitiveTier(phase, state) {
+  const tiers = state?.config?.cognitive_tiers;
+  if (!tiers || typeof tiers !== "object") return null;
+  // Direct match (e.g., "arm", "design", "plan")
+  const direct = tiers[phase];
+  if (direct) return direct;
+  // Hyphenated to underscored (e.g., "adversarial-review" -> "adversarial_review")
+  const underscored = phase.replace(/-/g, "_");
+  if (tiers[underscored]) return tiers[underscored];
+  // Lead role suffix (e.g., "adversarial_review_lead", "build_lead")
+  if (tiers[`${underscored}_lead`]) return tiers[`${underscored}_lead`];
+  return null;
+}
+
 function contextBudgetForPhase(phase, state) {
   const budgets = state?.config?.context_budgets ?? {};
   const direct = budgets[phase];
@@ -231,10 +245,12 @@ function runStage(options) {
   }
   emitRetryEventIfNeeded(runId, phase);
 
+  const cognitiveTier = resolveCognitiveTier(phase, state);
   appendTraceEvent(runId, {
     event: "phase_start",
     phase,
     status: "ok",
+    metadata: cognitiveTier ? { cognitive_tier: cognitiveTier } : undefined,
   });
 
   let policyDecision = null;
@@ -371,6 +387,7 @@ function runStage(options) {
         gate_type: "phase",
         schema_ref: schemaRef,
         config_id: configId,
+        cognitive_tier: cognitiveTier,
       },
       gateFileOverride: gateFileNameForPhase(phase),
     });
@@ -388,6 +405,7 @@ function runStage(options) {
         gate_type: "phase",
         schema_ref: schemaRef,
         config_id: configId,
+        cognitive_tier: cognitiveTier,
       },
       gateFileOverride: gateFileNameForPhase(phase),
     });

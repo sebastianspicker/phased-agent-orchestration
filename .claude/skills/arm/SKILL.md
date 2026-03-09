@@ -13,6 +13,7 @@ description: "Convert a raw idea into a decision-complete brief artifact with ex
 Read and follow `adapters/claude/skills/orchestration-arm/SKILL.md`.
 
 ## Claude Code notes
+- **Model tier: high_reasoning (Opus)** — requirement extraction and constraint analysis need deep reasoning.
 - Ask clarifying questions directly rather than inventing requirements.
 - Present all unresolved decisions together in one checkpoint, not iterative micro-confirmations.
 - Output artifact: `.pipeline/runs/<run-id>/brief.json`
