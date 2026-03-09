@@ -45,8 +45,7 @@
 
 ## Cross-cutting flows
 - Tool contracts live in `contracts/*.schema.json` and are referenced by runtime skills and tool definitions.
-- Tool definitions live in `agent-config/tool-definitions/tools.generated.json`.
-- Adapter generation/sync: `scripts/adapters/generate_adapters.py` renders `adapters/<runner>/skills/*`, legacy mirrors (`.codex/.cursor`), and runner root entry files; `scripts/check-adapter-sync.sh` enforces sync in verify.
+- Adapter generation/sync: `scripts/adapters/generate_adapters.py` renders `adapters/<runner>/skills/*` and local IDE config files; `scripts/check-adapter-sync.sh` enforces sync in verify.
 - Skill validation: `scripts/skills/validate_skills.py` enforces SKILL.md frontmatter and structure across manifest-declared skill roots.
 - Release-readiness contract: `contracts/artifacts/release-readiness.schema.json` defines final go/no-go evidence requirements.
 - Security orchestration contract: `contracts/artifacts/quality-report.schema.json` requires `security_audit` for `audit_type=security`, including coverage checklist, fix-loop evidence, and accepted-risk signoff metadata.

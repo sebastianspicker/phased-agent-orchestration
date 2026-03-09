@@ -10,7 +10,6 @@ This index provides the canonical entrypoints for repository documentation.
 ## Platform and Operation
 - [PLATFORMS](PLATFORMS.md): adapter and platform support model.
 - [ORCHESTRATION_POLICY](ORCHESTRATION_POLICY.md): policy controls used by pipeline orchestration.
-- [ROADMAP](ROADMAP.md): implemented milestones and forward-looking backlog.
 
 ## Scientific Foundation
 - [SCIENTIFIC_FOUNDATION](SCIENTIFIC_FOUNDATION.md): formal model and rationale.

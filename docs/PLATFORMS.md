@@ -24,7 +24,7 @@ Adapters translate the playbook into the primitives of a specific IDE/runner.
 - Canonical templates: `adapters/templates/`
 - Generator + sync-check: `scripts/adapters/generate_adapters.py` (`--check` mode in CI/verify)
 - Supported runners: `codex`, `cursor`, `claude`, `gemini`, `kilo`
-- Legacy paths `.codex/` and `.cursor/` are compatibility shims; treat `adapters/` as authoritative.
+- `adapters/` is the authoritative source for all runner stage guidance.
 
 ## Verification modes
 

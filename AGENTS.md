@@ -10,8 +10,6 @@ This repo implements a phased AI orchestration pipeline with two layers:
 - `adapters/<runner>/skills/orchestration-*/` — per-runner stage adapters (`codex`, `cursor`, `claude`, `gemini`, `kilo`) for Intake, Design Synthesis, Adversarial Challenge, Execution Blueprint, Drift Match, Coordinated Build, quality-static, quality-tests, post-build, release-readiness, and pipeline.
 - `scripts/adapters/generate_adapters.py` — deterministic generator (`--check` available) for adapters, legacy mirrors (`.codex/.cursor`), and runner root entry files.
 - `scripts/check-adapter-sync.sh` — sync guard used by verify to ensure generated files match templates.
-- `CODEX.md`, `CURSOR.md`, `CLAUDE.md`, `GEMINI.md`, `KILO.md` — runner-specific root entrypoints into the orchestration pipeline.
-- `.codex/skills/orchestration/SKILL.md` — legacy-compatible core playbook reference.
 - `contracts/artifacts/` — artifact schemas (brief, design-document, review-report, execution-plan, drift-report, quality-report, release-readiness, execution-trace, evaluation-report, context-manifest-gate, traceability-check).
 - `contracts/quality-gate.schema.json` — reusable quality gate schema.
 - `skills/dev-tools/quality-gate/` — runtime skill: artifact validation + acceptance criteria.
@@ -20,10 +18,6 @@ This repo implements a phased AI orchestration pipeline with two layers:
 - `scripts/pipeline-init.sh` — initialize a pipeline run.
 - `scripts/eval/` — matrix execution + evaluation aggregation scripts.
 - `docs/pipeline/` — pipeline state template.
-- `.claude/rules/` — Claude Code path-specific rules (auto-load when matching files are touched).
-- `.claude/skills/` — Claude Code native skills (slash commands: `/pipeline`, `/arm`, `/design`, `/ar`, `/plan`, `/pmatch`, `/build`, `/verify`, `/status`).
-- `.claude/commands/` — Claude Code convenience commands (`/verify`, `/init-pipeline`, `/regen-adapters`, `/pipeline-status`).
-- `deprecated/` — local-only holding area for retired files (git-ignored, not part of repo).
 
 ## Verify changes
 

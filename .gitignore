@@ -18,9 +18,17 @@ dist/
 Thumbs.db
 .idea/
 .vscode/
-.cursor/*
-!.cursor/skills/
-!.cursor/skills/**
+.cursor/
+.claude/
+.codex/
+agent-config/
+
+# Runner entry docs (generated from adapters/templates/)
+CLAUDE.md
+CODEX.md
+CURSOR.md
+GEMINI.md
+KILO.md
 
 # Test output
 coverage/
@@ -60,6 +68,7 @@ DECISIONS.md
 FINDINGS.md
 LOG.md
 REFACTOR_PLAN.md
+docs/ROADMAP.md
 
 # Local retirement and historical material (intentionally not tracked)
 deprecated/
