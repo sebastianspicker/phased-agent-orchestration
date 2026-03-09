@@ -70,6 +70,12 @@ npm run build
 npm test
 ```
 
+### pipeline runner lib
+```bash
+cd scripts/pipeline
+npx vitest run
+```
+
 ## Rules
 - Do not break runtime skill packages: avoid moving/renaming `manifest.yaml`, `schemas/*`, `src/*`, or `sandbox/*`.
 - Reproduce issues locally before changing behavior.

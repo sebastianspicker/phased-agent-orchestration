@@ -87,7 +87,12 @@ function loadTasksetTask(tasksetRef, taskId) {
   if (!tasksetRef) return null;
   const root = getRepoRoot();
   const tasksetPath = resolveWithinRepo(tasksetRef, root);
-  const data = JSON.parse(readFileSync(tasksetPath, "utf8"));
+  let data;
+  try {
+    data = JSON.parse(readFileSync(tasksetPath, "utf8"));
+  } catch (parseErr) {
+    throw badInput(`failed to read taskset ${tasksetRef}: ${parseErr.message}`);
+  }
   if (!Array.isArray(data.tasks) || data.tasks.length === 0) {
     throw badInput(`taskset has no tasks: ${tasksetRef}`);
   }
@@ -260,7 +265,11 @@ function runStage(options) {
         artifact_ref: toWorkspaceRelative(inputAbs),
         status: "ok",
       });
-      artifact = JSON.parse(readFileSync(inputAbs, "utf8"));
+      try {
+        artifact = JSON.parse(readFileSync(inputAbs, "utf8"));
+      } catch (parseErr) {
+        throw badInput(`failed to read input artifact ${options["input-artifact"]}: ${parseErr.message}`);
+      }
       writeJson(artifactAbs, artifact);
       wroteArtifact = true;
     } else {
@@ -283,7 +292,11 @@ function runStage(options) {
           artifact_ref: toWorkspaceRelative(artifactAbs),
           status: "ok",
         });
-        artifact = JSON.parse(readFileSync(artifactAbs, "utf8"));
+        try {
+          artifact = JSON.parse(readFileSync(artifactAbs, "utf8"));
+        } catch (parseErr) {
+          throw badInput(`failed to read artifact ${artifactRef}: ${parseErr.message}`);
+        }
       }
     }
 

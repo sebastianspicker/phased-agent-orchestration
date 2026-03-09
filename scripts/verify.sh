@@ -121,6 +121,11 @@ step_info "runner CLI smoke test"
 node "$root_dir/scripts/pipeline/runner.mjs" --help >/dev/null 2>&1 || { step_fail "runner CLI smoke test"; exit 1; }
 step_ok "runner CLI loads successfully"
 
+# Runner lib unit tests
+step_info "runner lib tests"
+(cd "$root_dir/scripts/pipeline" && npx vitest run --reporter=verbose 2>&1) || { step_fail "runner lib tests"; exit 1; }
+step_ok "runner lib tests passed"
+
 export SKIP_INSTALL
 export root_dir
 
