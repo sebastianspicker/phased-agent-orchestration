@@ -10,7 +10,7 @@ description: "Kilo adapter for /design. Produces a first-principles design docum
 - The user requests `/design`, architecture direction, or approach definition.
 
 ## Model tier
-Use a high-reasoning model.
+Use a balanced-reasoning model. Design follows structured templates with evidence grounding on well-defined brief input.
 
 ## Semantic intent
 - Evidence-first guidance: design choices must be source-backed.

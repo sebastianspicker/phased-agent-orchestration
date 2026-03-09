@@ -11,7 +11,7 @@ description: "Kilo adapter for /pmatch. Runs dual independent claim extraction a
 
 ## Model tier
 - Extractors: fast worker models in isolated contexts.
-- Lead: high-capability adjudicator for conflict resolution and mitigation decisions.
+- Lead: balanced-reasoning adjudicator for structured conflict resolution and mitigation decisions.
 
 ## Semantic intent
 - Separation of duties: extractors work independently; lead adjudicates.

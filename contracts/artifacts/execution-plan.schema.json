@@ -21,7 +21,7 @@
           "group_id": { "type": "string", "minLength": 1 },
           "builder_tier": {
             "type": "string",
-            "enum": ["high_reasoning", "fast"],
+            "enum": ["high_reasoning", "balanced", "fast"],
             "default": "fast",
             "description": "Capability tier used for execution assignment."
           },

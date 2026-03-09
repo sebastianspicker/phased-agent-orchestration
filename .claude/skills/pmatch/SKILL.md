@@ -13,7 +13,7 @@ description: "Run dual independent claim extraction and adjudicate drift between
 Read and follow `adapters/claude/skills/orchestration-pmatch/SKILL.md`.
 
 ## Claude Code notes
-- **Model tiers: Extractor subagents use fast (Haiku) for independent claim extraction; lead uses high_reasoning (Opus) for adjudication and conflict resolution.**
+- **Model tiers: Extractor subagents use fast (Haiku) for independent claim extraction; lead uses balanced (Sonnet) for adjudication and conflict resolution.** Sonnet handles structured claim comparison well; Opus is not needed here. `/fast` mode is appropriate for the lead.
 - Uses dual independent extraction: two separate passes extract claims, then adjudicates disagreements.
 - High-severity drift blocks progression; low-severity drift is logged as advisory.
 - Output artifact: `.pipeline/runs/<run-id>/pmatch.json`

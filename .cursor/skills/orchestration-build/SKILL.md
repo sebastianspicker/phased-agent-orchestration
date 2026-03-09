@@ -10,8 +10,8 @@ description: "Cursor adapter for /build. Coordinates parallel builder subagents 
 - The user requests `/build` or implementation start.
 
 ## Model tiers
-- Lead: high-capability coordinator
-- Builders: fast worker models
+- Lead: balanced-reasoning coordinator (structured process management)
+- Builders: fast worker models (or balanced for `builder_tier: balanced` groups)
 
 ## Semantic intent
 - Separation of duties: lead coordinates and validates process; builders implement.

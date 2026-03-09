@@ -10,7 +10,7 @@ description: "Cursor adapter for /arm. Converts raw idea input into a decision-c
 - The user explicitly asks for `/arm`, briefing, requirement shaping, or scoping.
 
 ## Model tier
-Use a high-reasoning model.
+Use a high-reasoning model. This stage handles ambiguous, unstructured input that requires creative interpretation.
 
 ## Semantic intent
 - Context minimization: only collect information required to close the brief.

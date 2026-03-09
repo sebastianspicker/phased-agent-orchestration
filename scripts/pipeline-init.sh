@@ -54,14 +54,18 @@ cat > "$pipeline_dir/pipeline-state.json" <<EOF
   "config": {
     "cognitive_tiers": {
       "arm": "high_reasoning",
-      "design": "high_reasoning",
+      "design": "balanced",
       "adversarial_review_lead": "high_reasoning",
       "adversarial_review_reviewers": "fast",
-      "plan": "high_reasoning",
-      "pmatch": "fast",
-      "build_lead": "high_reasoning",
+      "plan": "balanced",
+      "pmatch_extractors": "fast",
+      "pmatch_adjudicator": "balanced",
+      "build_lead": "balanced",
       "build_worker": "fast",
-      "post_build": "fast"
+      "quality_static": "fast",
+      "quality_tests": "fast",
+      "post_build": "fast",
+      "release_readiness": "high_reasoning"
     },
     "reviewer_roles": [
       "architect-reviewer",

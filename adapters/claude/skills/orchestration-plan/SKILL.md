@@ -10,7 +10,7 @@ description: "Claude adapter for /plan. Converts approved design+review artifact
 - The user requests `/plan`, implementation planning, or task decomposition.
 
 ## Model tier
-Use a high-reasoning model.
+Use a balanced-reasoning model. Task decomposition is systematic and bounded; full high-reasoning is not required.
 
 ## Semantic intent
 - Predeclared verification: define tests and acceptance checks before coding starts.
@@ -25,7 +25,7 @@ Use a high-reasoning model.
 ### 1. Build task groups
 Partition work into independent groups (target 3-6 tasks/group, max 8).
 If a group falls outside 3-6 tasks, add `scope_override.reason` in that group and justify why.
-Assign `builder_tier` per group: `high_reasoning` for groups requiring architectural judgment or complex refactoring, `fast` for straightforward implementation tasks.
+Assign `builder_tier` per group: `high_reasoning` for groups requiring architectural judgment or complex refactoring, `balanced` for structured implementation with reasoning, `fast` for straightforward implementation tasks.
 
 ### 2. Assign file ownership
 Create explicit path->group mapping and remove overlaps.

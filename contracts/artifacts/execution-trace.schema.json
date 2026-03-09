@@ -67,7 +67,7 @@
     },
     "tier": {
       "type": "string",
-      "enum": ["high_reasoning", "fast"]
+      "enum": ["high_reasoning", "balanced", "fast"]
     },
     "model_hint": {
       "type": "string"

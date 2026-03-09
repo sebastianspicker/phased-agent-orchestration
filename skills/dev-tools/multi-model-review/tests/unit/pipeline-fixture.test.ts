@@ -182,7 +182,7 @@ describe("pipeline fixture integration", () => {
               code_patterns: [
                 {
                   file: "contracts/artifacts/execution-plan.schema.json",
-                  pattern: "builder_tier enum = [high_reasoning, fast]",
+                  pattern: "builder_tier enum = [high_reasoning, balanced, fast]",
                 },
               ],
               test_cases: [
