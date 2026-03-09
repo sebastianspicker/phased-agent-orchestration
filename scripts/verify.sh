@@ -119,7 +119,7 @@ run_core_checks
 # Install workspace dependencies early (needed by runner lib tests and package verification)
 if [ "$SKIP_INSTALL" -eq 0 ]; then
   echo "==> npm install (workspaces)"
-  (cd "$root_dir" && npm install --ignore-scripts)
+  (cd "$root_dir" && npm install)
 fi
 
 # Runner CLI smoke test
