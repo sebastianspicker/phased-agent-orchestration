@@ -475,6 +475,15 @@ const ctx = {
   appendRunEndIfMissing,
 };
 
+const COMMANDS = {
+  "start-phase": (opts) => runStartPhase(opts, ctx),
+  "end-phase": (opts) => runEndPhase(opts, ctx),
+  "record-artifact": (opts) => runRecordArtifact(opts, ctx),
+  "record-gate": (opts) => runRecordGate(opts, ctx),
+  "summarize-run": (opts) => runSummarizeRun(opts, ctx),
+  "run-stage": runStage,
+};
+
 function main() {
   const [command, ...rest] = process.argv.slice(2);
   if (!command || command === "--help" || command === "-h") {
@@ -482,34 +491,11 @@ function main() {
     return;
   }
 
-  const options = parseOptions(rest);
-
-  if (command === "start-phase") {
-    runStartPhase(options, ctx);
-    return;
+  const handler = COMMANDS[command];
+  if (!handler) {
+    throw badInput(`unknown command: ${command}`);
   }
-  if (command === "end-phase") {
-    runEndPhase(options, ctx);
-    return;
-  }
-  if (command === "record-artifact") {
-    runRecordArtifact(options, ctx);
-    return;
-  }
-  if (command === "record-gate") {
-    runRecordGate(options, ctx);
-    return;
-  }
-  if (command === "summarize-run") {
-    runSummarizeRun(options, ctx);
-    return;
-  }
-  if (command === "run-stage") {
-    runStage(options);
-    return;
-  }
-
-  throw badInput(`unknown command: ${command}`);
+  handler(parseOptions(rest));
 }
 
 const ERROR_HINTS = {

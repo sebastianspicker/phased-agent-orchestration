@@ -352,37 +352,30 @@ function checkRegexMatch(
   };
 }
 
+type CriterionEvaluator = (
+  artifact: Record<string, unknown>,
+  criterion: Criterion,
+) => CriterionResult;
+
+const EVALUATORS: Record<string, CriterionEvaluator> = {
+  "field-exists": (a, c) => checkFieldExists(a, c.path),
+  "field-empty": (a, c) => checkFieldEmpty(a, c.path),
+  "count-min": (a, c) => checkCountMin(a, c.path, c.value),
+  "count-max": (a, c) => checkCountMax(a, c.path, c.value),
+  "number-max": (a, c) => checkNumberMax(a, c.path, c.value),
+  "coverage-min": (a, c) => checkCoverageMin(a, c),
+  "regex-match": (a, c) => checkRegexMatch(a, c.path, c.value),
+};
+
 export function evaluateCriteria(
   artifact: Record<string, unknown>,
   criteria: Criterion[],
 ): CriterionResult[] {
   return criteria.map((c) => {
-    let result: CriterionResult;
-    switch (c.type) {
-      case "field-exists":
-        result = checkFieldExists(artifact, c.path);
-        break;
-      case "field-empty":
-        result = checkFieldEmpty(artifact, c.path);
-        break;
-      case "count-min":
-        result = checkCountMin(artifact, c.path, c.value);
-        break;
-      case "count-max":
-        result = checkCountMax(artifact, c.path, c.value);
-        break;
-      case "number-max":
-        result = checkNumberMax(artifact, c.path, c.value);
-        break;
-      case "coverage-min":
-        result = checkCoverageMin(artifact, c);
-        break;
-      case "regex-match":
-        result = checkRegexMatch(artifact, c.path, c.value);
-        break;
-      default:
-        result = { name: "", passed: false, evidence: `Unknown criterion type: ${c.type}` };
-    }
+    const evaluator = EVALUATORS[c.type];
+    const result = evaluator
+      ? evaluator(artifact, c)
+      : { name: "", passed: false, evidence: `Unknown criterion type: ${c.type}` };
     result.name = c.name;
     return result;
   });

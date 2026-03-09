@@ -156,27 +156,8 @@ function claimMatchScore(claim: string, targetText: string): number {
   return hits / claimWords.length;
 }
 
-function tokenSimilarity(a: string, b: string): number {
-  const tokA = new Set(
-    normalize(a)
-      .split(" ")
-      .filter((t) => t.length > 1),
-  );
-  const tokB = new Set(
-    normalize(b)
-      .split(" ")
-      .filter((t) => t.length > 1),
-  );
-  if (tokA.size === 0 && tokB.size === 0) return 1;
-  if (tokA.size === 0 || tokB.size === 0) return 0;
-
-  let intersection = 0;
-  for (const token of tokA) {
-    if (tokB.has(token)) intersection++;
-  }
-  const union = tokA.size + tokB.size - intersection;
-  return union === 0 ? 0 : intersection / union;
-}
+/** Re-export from dedup — single source of truth for Jaccard similarity. */
+import { tokenSimilarity } from "./dedup.js";
 
 function toVerificationStatus(score: number): DriftVerificationStatus {
   if (score < 0) return "unverifiable";
@@ -365,14 +346,8 @@ export function detectDrift(sourceText: string, targetText: string): DriftDetect
 export function detectDriftFromExtractorClaims(
   extractorClaimSets: ExtractorClaimSet[],
 ): DriftDetectionResult {
-  if (extractorClaimSets.length !== 2) {
-    throw Object.assign(new Error("dual-extractor mode requires exactly 2 extractor_claim_sets"), {
-      code: "E_BAD_INPUT",
-    });
-  }
-
   const [first, second] = extractorClaimSets;
-  if (!first || !second) {
+  if (extractorClaimSets.length !== 2 || !first || !second) {
     throw Object.assign(new Error("dual-extractor mode requires exactly 2 extractor_claim_sets"), {
       code: "E_BAD_INPUT",
     });

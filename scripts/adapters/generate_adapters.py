@@ -45,9 +45,13 @@ def render_template(path: Path, values: dict[str, str]) -> str:
     return text
 
 
-def compare_or_write(path: Path, content: str, check_only: bool, diffs: list[str]) -> None:
+def compare_or_write(
+    path: Path, content: str, check_only: bool, diffs: list[str], *, optional: bool = False
+) -> None:
     current = read_text(path) if path.exists() else None
     if check_only:
+        if optional and current is None:
+            return
         if current != content:
             old = current.splitlines() if current is not None else []
             new = content.splitlines()
@@ -171,7 +175,7 @@ def main() -> int:
                 mirror_root = resolve_repo_path(root, cursor_mirror_root, "legacy_mirrors.cursor_skills_root")
                 mirror = mirror_root / stage_dir / "SKILL.md"
                 before = mirror.read_text(encoding="utf-8") if mirror.exists() else None
-                compare_or_write(mirror, rendered, args.check, diffs)
+                compare_or_write(mirror, rendered, args.check, diffs, optional=True)
                 if not args.check and before != rendered:
                     writes += 1
 
@@ -180,7 +184,7 @@ def main() -> int:
             rendered_legacy = render_template(legacy_tmpl, values)
             legacy_path = resolve_repo_path(root, codex_playbook_target, "legacy_mirrors.codex_playbook")
             before = legacy_path.read_text(encoding="utf-8") if legacy_path.exists() else None
-            compare_or_write(legacy_path, rendered_legacy, args.check, diffs)
+            compare_or_write(legacy_path, rendered_legacy, args.check, diffs, optional=True)
             if not args.check and before != rendered_legacy:
                 writes += 1
 
@@ -194,7 +198,7 @@ def main() -> int:
             rendered_root = render_template(root_tmpl, values)
             target = resolve_repo_path(root, root_entry_path, f"legacy root entry for '{runner_id}'")
             before = target.read_text(encoding="utf-8") if target.exists() else None
-            compare_or_write(target, rendered_root, args.check, diffs)
+            compare_or_write(target, rendered_root, args.check, diffs, optional=True)
             if not args.check and before != rendered_root:
                 writes += 1
 

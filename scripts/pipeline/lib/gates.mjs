@@ -116,20 +116,15 @@ export function emitGate({
   return gate;
 }
 
+const ARRAY_ARTIFACT_KEYS = new Set(["drift_reports", "quality_reports"]);
+
 export function updateStateAfterArtifact(state, phase, artifactRef) {
   const key = phaseToArtifactKey(phase);
   if (!key) return;
 
-  if (key === "drift_reports") {
-    state.artifacts.drift_reports = Array.isArray(state.artifacts.drift_reports)
-      ? [...state.artifacts.drift_reports, artifactRef]
-      : [artifactRef];
-    return;
-  }
-
-  if (key === "quality_reports") {
-    state.artifacts.quality_reports = Array.isArray(state.artifacts.quality_reports)
-      ? [...state.artifacts.quality_reports, artifactRef]
+  if (ARRAY_ARTIFACT_KEYS.has(key)) {
+    state.artifacts[key] = Array.isArray(state.artifacts[key])
+      ? [...state.artifacts[key], artifactRef]
       : [artifactRef];
     return;
   }
@@ -182,14 +177,8 @@ export function stageGateInput({ phase, artifact, artifactRef, schemaRef }) {
   };
 }
 
-export function gateStatusFromPhaseAndProfile(phase, stageProfile) {
-  if (typeof stageProfile.gate_status === "string") {
-    return stageProfile.gate_status;
-  }
-  if (phase === "post-build") {
-    return "pass";
-  }
-  return "pass";
+export function gateStatusFromPhaseAndProfile(_phase, stageProfile) {
+  return typeof stageProfile.gate_status === "string" ? stageProfile.gate_status : "pass";
 }
 
 export function evaluateContextBudgetGate({ runId, phase, artifact, artifactRef, schemaRef, state, budget }) {
@@ -307,33 +296,15 @@ export function evaluateTraceabilityGate({ runId, phase, state, resolveArtifactR
     });
   }
 
-  appendTraceEvent(runId, {
-    event: "artifact_read",
-    phase,
-    artifact_ref: toWorkspaceRelative(briefAbs),
-    status: "ok",
-  });
-  appendTraceEvent(runId, {
-    event: "artifact_read",
-    phase,
-    artifact_ref: toWorkspaceRelative(planAbs),
-    status: "ok",
-  });
-  if (designAbs && existsSync(designAbs)) {
-    appendTraceEvent(runId, {
-      event: "artifact_read",
-      phase,
-      artifact_ref: toWorkspaceRelative(designAbs),
-      status: "ok",
-    });
-  }
-  if (driftAbs && existsSync(driftAbs)) {
-    appendTraceEvent(runId, {
-      event: "artifact_read",
-      phase,
-      artifact_ref: toWorkspaceRelative(driftAbs),
-      status: "ok",
-    });
+  for (const absPath of [briefAbs, planAbs, designAbs, driftAbs]) {
+    if (absPath && existsSync(absPath)) {
+      appendTraceEvent(runId, {
+        event: "artifact_read",
+        phase,
+        artifact_ref: toWorkspaceRelative(absPath),
+        status: "ok",
+      });
+    }
   }
 
   const outcome = evaluateMustTraceability({
