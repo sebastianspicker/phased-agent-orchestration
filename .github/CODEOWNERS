@@ -1,0 +1,7 @@
+# Default owners for everything
+* @sebastian
+
+# CI/CD and security-sensitive paths require explicit review
+.github/ @sebastian
+scripts/ @sebastian
+contracts/ @sebastian

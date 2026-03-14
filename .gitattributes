@@ -1,0 +1,29 @@
+# Enforce consistent line endings
+* text=auto eol=lf
+
+# Explicitly declare text files
+*.js text eol=lf
+*.mjs text eol=lf
+*.ts text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+
+# Mark scripts as executable
+*.sh linguist-language=Shell
+
+# Prevent binary files from being diffed
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.tar.gz binary
+*.tgz binary
+
+# Lock files — treat as generated (no manual edits, reduce PR noise)
+package-lock.json linguist-generated=true

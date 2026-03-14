@@ -42,8 +42,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ripgrep
       - name: Verify (changed-only)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          ./scripts/verify.sh --changed-only --changed-base "${{ github.event.pull_request.base.sha }}"
+          ./scripts/verify.sh --changed-only --changed-base "$BASE_SHA"
 
   verify:
     name: Verify + Pipeline Smoke
