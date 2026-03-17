@@ -89,7 +89,7 @@ $$
 I(I;C) = I(I;S,N) = I(I;S) + I(I;N \mid S) \approx I(I;S)
 $$
 
-Meaning: **adding noise increases tokens but not intent information**.
+Meaning: adding noise increases tokens but not intent information.
 
 A useful normalized measure is:
 
@@ -103,7 +103,7 @@ $$
 \mathrm{SNR}_{\text{info}} \downarrow \quad \text{as noise tokens grow}
 $$
 
-**Interpretation:** Larger context windows can create _worse reasoning_ because they can **dilute** relevant information with irrelevant material.
+**Interpretation:** Larger context windows can create worse reasoning because they can dilute relevant information with irrelevant material.
 
 #### Attention Dilution (Mechanistic Intuition)
 
@@ -155,7 +155,7 @@ $$
 C_{\text{coord}}(n) \approx \alpha \cdot \frac{n(n-1)}{2} \in \Theta(n^2)
 $$
 
-**That is the “too many cooks” problem in math form.**
+That is the “too many cooks” problem in math form.
 
 #### Star Topology Reduces Overhead
 
@@ -279,7 +279,7 @@ This matches the idea of minimizing **expensive reasoning cycles** while maximiz
 
 ### 2.5 Independent Adversarial Review
 
-Instead of “one agent tries to be correct,” you want **independent perspectives**.
+Instead of “one agent tries to be correct,” you want independent perspectives.
 
 If a failure is detected with probability $r$ by one reviewer, then with $m$ independent reviewers:
 
@@ -291,7 +291,7 @@ Even with moderate $r$, parallel review improves recall.
 
 But independence matters: if reviewers share the same context soup, their errors correlate.
 
-So the repo’s emphasis on **isolated reviewer contexts** is mathematically coherent: it increases the likelihood that blind spots differ.
+So the repo’s emphasis on isolated reviewer contexts is mathematically coherent: it increases the likelihood that blind spots differ.
 
 ---
 
@@ -367,7 +367,7 @@ $$
 
 Adding gates increases $d_k$, reducing $p_k^{\text{res}}$, and reducing total defect risk.
 
-**Key: gating is a reliability multiplier.**
+Key: gating is a reliability multiplier.
 
 ---
 
@@ -442,7 +442,7 @@ This repository includes three key runtime packages:
    - reports deterministic aggregate metrics (event counts, gate results, phase durations, retry/failure counters)
    - emits run summaries used by evaluation workflows
 
-These runtime tools make “validation” _machine-checkable_ rather than “vibes-based.”
+These runtime tools make “validation” machine-checkable rather than “vibes-based.”
 
 ### 4.3 Why the Old “Orchestration Playground” Degraded
 
@@ -542,7 +542,7 @@ Based on the “judgment-centric” research direction, the repo can be extended
 
 # Mathematics & Computer-Science Foundations of **Phased Agent Orchestration**
 
-This document provides a rigorous **mathematical and informatics** explanation of the failure modes that motivated this repository (context dilution, coordination overhead, and drift), and why the repo’s **phased, contract-driven, quality-gated** approach is a principled mitigation.
+A rigorous mathematical and informatics explanation of the failure modes that motivated this repository (context dilution, coordination overhead, and drift), and why the repo’s phased, contract-driven, quality-gated approach is a principled mitigation.
 
 ---
 
@@ -588,7 +588,7 @@ $$
 I(C;Y) = H(Y) - H(Y \mid C)
 $$
 
-A central quantity for prompt engineering is not “how much context we have,” but **how much intent-relevant information per token** the context contains.
+A central quantity for prompt engineering is not “how much context we have,” but how much intent-relevant information per token the context contains.
 
 Define a coarse “information density” metric:
 
@@ -624,7 +624,7 @@ $$
 
 When you add $K$ extra tokens, the denominator increases. Even if the model _can_ learn to suppress noise, real systems empirically show sensitivity to where relevant information appears in long contexts (“position effects”).
 
-A widely cited empirical result is that **performance often peaks when relevant information is near the beginning or end** of the context and degrades when it is in the middle of long contexts (“lost in the middle”). See [Liu2024] for controlled evidence.
+A widely cited empirical result is that performance often peaks when relevant information is near the beginning or end of the context and degrades when it is in the middle of long contexts (“lost in the middle”). See [Liu2024] for controlled evidence.
 
 ---
 
@@ -642,7 +642,7 @@ Representative sources include:
 - LongBench (multi-task benchmark) [Bai2023; BaiACL2024]
 - RULER (synthetic benchmark, configurable complexity) [Hsieh2024]
 
-These results motivate an architectural stance: **don’t assume bigger contexts solve the problem**; engineer the system so agents receive a _curated signal_.
+These results motivate an architectural stance: don’t assume bigger contexts solve the problem; engineer the system so agents receive a curated signal.
 
 ---
 
@@ -672,7 +672,7 @@ See:
 
 ### 2.2 Architectural Consequence
 
-Because attention is expensive and long contexts are behaviorally fragile, an optimal engineering strategy is not “maximize $L$” but to **optimize relevance per token** and to use **external structure** (phases, artifacts, gates) to stabilize behavior.
+Because attention is expensive and long contexts are behaviorally fragile, an optimal engineering strategy is not “maximize $L$” but to optimize relevance per token and to use external structure (phases, artifacts, gates) to stabilize behavior.
 
 This is exactly what the repository implements: artifact handoffs and gates replace “throw everything into one prompt” as the scaling mechanism.
 
@@ -1034,4 +1034,4 @@ The repo’s phased approach is not arbitrary ceremony. It is a rational respons
 - coordination overhead in multi-agent systems,
 - drift and self-certification in “plan → code” loops.
 
-The architecture replaces “hope the model stays aligned” with **measurable invariants** (schemas, gates, drift scores) and **structural reliability** (phase separation + independent verification).
+The architecture replaces “hope the model stays aligned” with measurable invariants (schemas, gates, drift scores) and structural reliability (phase separation + independent verification).

@@ -2,9 +2,7 @@
 
 # Scientific & Engineering Rationale — Implementation Map for _Phased Agent Orchestration_
 
-This document explains **(a)** the information-theoretic problem that breaks “big-context” agent workflows, **(b)** the scientific rationale behind **phased orchestration**, and **(c)** how this repository implements those ideas via **typed artifacts**, **quality gates**, **context scoping**, and **separation-of-duties**.
-
-> **Core thesis**: Reliability in agentic software delivery is achieved less by “smarter prompts” and more by **institutional structure**: narrow context, explicit handoffs, verifiable artifacts, independent checks, and hard gates.
+> **Core thesis**: Reliability in agentic software delivery is achieved less by “smarter prompts” and more by institutional structure: narrow context, explicit handoffs, verifiable artifacts, independent checks, and hard gates.
 
 ---
 
@@ -25,31 +23,31 @@ The resulting failure mode is predictable:
 
 This repo’s countermeasure is a simple rule:
 
-> **No stage can move forward until its output is validated.**
+> No stage can move forward until its output is validated.
 
 ---
 
 ## 2) System architecture: two layers + contracts + gates
 
-This repository is designed as **two separable layers**:
+This repository is designed as two separable layers:
 
 ### 2.1 Orchestration layer (runner-specific)
 
-- Canonical adapters: **`../adapters/<runner>/skills/orchestration-*/SKILL.md`**
-- Canonical templates: **`../adapters/templates/`**
-- Deterministic generation + sync check: **`../scripts/adapters/generate_adapters.py`** and **`../scripts/check-adapter-sync.sh`**
-- Legacy core playbook (compatibility): **`../.codex/skills/orchestration/SKILL.md`**
+- Canonical adapters: `../adapters/<runner>/skills/orchestration-*/SKILL.md`
+- Canonical templates: `../adapters/templates/`
+- Deterministic generation + sync check: `../scripts/adapters/generate_adapters.py` and `../scripts/check-adapter-sync.sh`
+- Legacy core playbook (compatibility): `../.codex/skills/orchestration/SKILL.md`
 
 These files define _how_ a runner should execute each stage and what artifacts/gates it must produce.
 
 ### 2.2 Runtime layer (runner-agnostic)
 
-- Quality gate runtime: **`../skills/dev-tools/quality-gate/`**
-- Review/drift runtime: **`../skills/dev-tools/multi-model-review/`**
-- Trace runtime: **`../skills/dev-tools/trace-collector/`**
-- Artifact & gate schemas: **`../contracts/`**
+- Quality gate runtime: `../skills/dev-tools/quality-gate/`
+- Review/drift runtime: `../skills/dev-tools/multi-model-review/`
+- Trace runtime: `../skills/dev-tools/trace-collector/`
+- Artifact & gate schemas: `../contracts/`
 
-These components are intentionally **API-independent** (no paid model API calls required). They validate, merge, adjudicate, and gate.
+These components are intentionally API-independent (no paid model API calls required). They validate, merge, adjudicate, and gate.
 
 ### 2.3 Contracts (typed artifacts)
 
@@ -271,7 +269,7 @@ It produces structured outputs with:
 - cost/benefit and recommendations
 - drift claims + adjudication metadata
 
-Crucially: it performs **no paid API calls**; it expects the runner (Cursor tasks / agent teams) to generate the raw findings/claims, and then it “institutionalizes” them into a deterministic artifact.
+Crucially: it performs no paid API calls; it expects the runner (Cursor tasks / agent teams) to generate the raw findings/claims, and then it “institutionalizes” them into a deterministic artifact.
 
 ### 4.3 `trace-collector` runtime skill
 

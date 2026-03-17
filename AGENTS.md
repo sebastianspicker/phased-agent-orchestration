@@ -25,9 +25,7 @@ Repo-wide shortcut:
 ```bash
 ./scripts/verify.sh
 ```
-This now includes an orchestration integrity smoke-check (`scripts/check-orchestration-integrity.sh`) before package build/tests.
-It also includes adapter template sync validation (`scripts/check-adapter-sync.sh`).
-It also enforces markdown link integrity (`scripts/check-markdown-links.py`) and tracked-file hygiene (`scripts/check-repo-hygiene.sh`).
+Runs in order: orchestration integrity smoke-check (`scripts/check-orchestration-integrity.sh`), adapter template sync validation (`scripts/check-adapter-sync.sh`), markdown link integrity (`scripts/check-markdown-links.py`), tracked-file hygiene (`scripts/check-repo-hygiene.sh`), then package build/test for each runtime skill.
 
 Fast diff-aware mode:
 ```bash

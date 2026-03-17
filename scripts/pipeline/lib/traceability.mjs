@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { SKILL_ENTRYPOINTS } from "../../lib/constants.mjs";
 import { getRepoRoot, resolveWithinRepo, toWorkspaceRelative } from "./state.mjs";
 import { badInput } from "./errors.mjs";
 import { spawnSkillTool } from "./subprocess.mjs";
@@ -102,7 +103,7 @@ function buildCoverageResult(name, sourceIds, targetIds, extra = {}) {
 
 function runQualityGate(input, root) {
   return spawnSkillTool({
-    entrypoint: "skills/dev-tools/quality-gate/dist/index.js",
+    entrypoint: SKILL_ENTRYPOINTS.quality_gate,
     input,
     root,
     toolName: "quality-gate",

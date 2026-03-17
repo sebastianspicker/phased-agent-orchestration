@@ -1,7 +1,5 @@
 # Orchestration Policy
 
-This policy decides when to run single-agent vs. multi-agent execution.
-
 ## Objective
 
 Use multi-agent orchestration only when expected quality gain exceeds additional inference and coordination cost.

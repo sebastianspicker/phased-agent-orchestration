@@ -18,27 +18,28 @@ export type AjvFormatsFn = (ajv: AjvInstance, formats?: string[]) => void;
 let _AjvClass: AjvConstructor | undefined;
 let _addFormats: AjvFormatsFn | undefined;
 
-export async function getAjv(): Promise<AjvConstructor> {
-  if (_AjvClass) return _AjvClass;
-  const mod: Record<string, unknown> = await import("ajv");
+function resolveModuleDefault<T>(mod: Record<string, unknown>): T {
   const candidate = mod.default ?? mod;
-  const inner =
+  return (
     typeof candidate === "function"
       ? candidate
-      : ((candidate as Record<string, unknown>).default ?? candidate);
-  _AjvClass = inner as AjvConstructor;
+      : ((candidate as Record<string, unknown>).default ?? candidate)
+  ) as T;
+}
+
+export async function getAjv(): Promise<AjvConstructor> {
+  if (_AjvClass) return _AjvClass;
+  _AjvClass = resolveModuleDefault<AjvConstructor>(
+    (await import("ajv")) as Record<string, unknown>,
+  );
   return _AjvClass;
 }
 
 export async function getAddFormats(): Promise<AjvFormatsFn> {
   if (_addFormats) return _addFormats;
-  const mod: Record<string, unknown> = await import("ajv-formats");
-  const candidate = mod.default ?? mod;
-  const inner =
-    typeof candidate === "function"
-      ? candidate
-      : ((candidate as Record<string, unknown>).default ?? candidate);
-  _addFormats = inner as AjvFormatsFn;
+  _addFormats = resolveModuleDefault<AjvFormatsFn>(
+    (await import("ajv-formats")) as Record<string, unknown>,
+  );
   return _addFormats;
 }
 

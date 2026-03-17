@@ -7,6 +7,7 @@ import type {
   ExtractorClaimInput,
   ExtractorClaimSet,
 } from "../types.js";
+import { tokenSimilarity } from "./dedup.js";
 
 interface Section {
   heading: string;
@@ -156,9 +157,6 @@ function claimMatchScore(claim: string, targetText: string): number {
   return hits / claimWords.length;
 }
 
-/** Re-export from dedup — single source of truth for Jaccard similarity. */
-import { tokenSimilarity } from "./dedup.js";
-
 function toVerificationStatus(score: number): DriftVerificationStatus {
   if (score < 0) return "unverifiable";
   if (score >= 0.6) return "verified";
@@ -225,7 +223,7 @@ function mergeConfidence(first?: number, second?: number): number | undefined {
   const hasFirst = typeof first === "number";
   const hasSecond = typeof second === "number";
   if (hasFirst && hasSecond) {
-    return Number((((first as number) + (second as number)) / 2).toFixed(4));
+    return Number(((first + second) / 2).toFixed(4));
   }
   if (hasFirst) return first;
   if (hasSecond) return second;

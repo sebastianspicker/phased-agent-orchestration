@@ -1,18 +1,14 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import {
   getRunDir,
+  readJson,
   resolveWithinRepo,
   toWorkspaceRelative,
 } from "../pipeline/lib/state.mjs";
 import { parseArgs as parseCliArgs } from "../lib/argv.mjs";
 import { CONFIG_IDS } from "../lib/constants.mjs";
-
-function readJson(path, fallback = null) {
-  if (!existsSync(path)) return fallback;
-  return JSON.parse(readFileSync(path, "utf8"));
-}
 
 function parseArgs(argv) {
   const args = parseCliArgs(

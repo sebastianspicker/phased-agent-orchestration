@@ -1,7 +1,5 @@
 # Documentation Index
 
-This index provides the canonical entrypoints for repository documentation.
-
 ## Start Here
 - [README](../README.md): architecture overview and end-to-end orchestration flow.
 - [RUNBOOK](RUNBOOK.md): reproducible local and CI verification commands.

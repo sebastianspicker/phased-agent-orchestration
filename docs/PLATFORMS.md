@@ -1,7 +1,5 @@
 # Platform / adapter notes
 
-This repo is split into a **platform-agnostic core** and optional **platform adapters**.
-
 ## Core (platform-agnostic)
 
 The core is designed to work in any environment that can read/write files and run shell commands:

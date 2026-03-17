@@ -243,10 +243,7 @@ export function validateInput(input: Input): void {
     return;
   }
 
-  if (!validatedDriftConfig) {
-    throw badInput("drift_config.target_ref is required for drift-detect action");
-  }
-  if (!validatedDriftConfig.targetRef) {
+  if (!validatedDriftConfig?.targetRef) {
     throw badInput("drift_config.target_ref is required for drift-detect action");
   }
   if (

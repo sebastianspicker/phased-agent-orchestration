@@ -186,7 +186,7 @@ fi
 if [ ${#packages[@]} -eq 0 ]; then
   :
 elif [ "$PARALLEL" -eq 1 ] && [ ${#packages[@]} -gt 1 ]; then
-  printf "%s\n" "${packages[@]}" | xargs -P 3 -I {} bash -c 'verify_pkg "{}"'
+  printf "%s\n" "${packages[@]}" | xargs -n 1 -P 3 bash -c 'verify_pkg "$1"' _
 else
   for pkg in "${packages[@]}"; do
     verify_pkg "$pkg"

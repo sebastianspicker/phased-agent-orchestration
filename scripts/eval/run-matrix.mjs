@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { validateTasksetSchema } from "./lib/taskset-validate.mjs";
-import { getRunDir, resolveWithinRepo, toWorkspaceRelative } from "../pipeline/lib/state.mjs";
+import { getRunDir, readJsonStrict, resolveWithinRepo, toWorkspaceRelative, writeJson } from "../pipeline/lib/state.mjs";
 import { parseArgs as parseCliArgs } from "../lib/argv.mjs";
 import { CONFIG_IDS, PHASE_ORDER } from "../lib/constants.mjs";
 
@@ -38,15 +38,6 @@ function parseArgs(argv) {
   }
 
   return args;
-}
-
-function readJson(path) {
-  return JSON.parse(readFileSync(path, "utf8"));
-}
-
-function writeJson(path, value) {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
 function runCommand(cmd, args, { cwd, env, input, allowFailure = false } = {}) {
@@ -146,7 +137,7 @@ function loadTaskset(root, tasksetRef) {
   if (!existsSync(abs)) {
     throw new Error(`Taskset not found: ${tasksetRef}`);
   }
-  const taskset = readJson(abs);
+  const taskset = readJsonStrict(abs);
   validateTasksetSchema({
     root,
     tasksetPath: tasksetRef,
@@ -158,7 +149,7 @@ function loadTaskset(root, tasksetRef) {
 
 function applyConfigToPipelineState(root, configId, mode) {
   const statePath = resolve(root, ".pipeline/pipeline-state.json");
-  const state = readJson(statePath);
+  const state = readJsonStrict(statePath);
 
   const featureFlags = state?.config?.feature_flags ?? {};
   featureFlags.trace_v1 = true;

@@ -231,10 +231,7 @@ python3 scripts/adapters/generate_adapters.py --check  # verify sync
 
 ## Contributing
 
-- Run `./scripts/verify.sh` before submitting changes
-- Keep diffs small and focused
-- Artifacts validate against `contracts/artifacts/*.schema.json`
-- See [`AGENTS.md`](AGENTS.md) for detailed repository rules
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, workflow, and repository rules.
 
 ## License
 

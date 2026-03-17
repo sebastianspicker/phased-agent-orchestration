@@ -43,24 +43,14 @@ export function validateInput(input: Input): void {
     if (!c.path || typeof c.path !== "string") {
       throw badInput("Each criterion must have a path");
     }
-    if (c.type === "count-min") {
+    if (c.type === "count-min" || c.type === "count-max") {
       if (
         typeof c.value !== "number" ||
         !Number.isFinite(c.value) ||
         !Number.isInteger(c.value) ||
         c.value < 0
       ) {
-        throw badInput("count-min criterion requires a non-negative integer value");
-      }
-    }
-    if (c.type === "count-max") {
-      if (
-        typeof c.value !== "number" ||
-        !Number.isFinite(c.value) ||
-        !Number.isInteger(c.value) ||
-        c.value < 0
-      ) {
-        throw badInput("count-max criterion requires a non-negative integer value");
+        throw badInput(`${c.type} criterion requires a non-negative integer value`);
       }
     }
     if (c.type === "number-max") {

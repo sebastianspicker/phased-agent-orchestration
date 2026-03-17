@@ -1,7 +1,5 @@
 # RUNBOOK
 
-This runbook lists reproducible commands for setup, verification, and troubleshooting.
-
 ## Requirements
 - Node.js >= 20 (see `skills/dev-tools/*/package.json` engines).
 - npm (for `npm ci` / `npm run`).
@@ -9,7 +7,7 @@ This runbook lists reproducible commands for setup, verification, and troublesho
 - ripgrep (`rg`) for stale-ref and hygiene checks.
 - Docker (optional, for local sandbox execution).
 
-### 2. Full CI Verification
+## Full CI Verification
 The primary check for all code, types, and schema validity:
 ```bash
 ./scripts/verify.sh
@@ -28,7 +26,7 @@ This runs:
    - `npm run build` (tsc)
    - `npm test` (vitest)
 
-### 3. Fast changed-only verification
+## Fast changed-only verification
 Use this for PR/local fast feedback:
 ```bash
 ./scripts/verify.sh --changed-only
