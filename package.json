@@ -7,7 +7,7 @@
     "skills/dev-tools/trace-collector"
   ],
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "vitest": "4.0.18"
+    "@biomejs/biome": "^2.4.8",
+    "vitest": "4.1.0"
   }
 }
