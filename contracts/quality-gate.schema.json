@@ -11,7 +11,8 @@
     "criteria",
     "blocking_failures",
     "artifact_ref",
-    "schema_validation"
+    "schema_validation",
+    "timestamp"
   ],
   "properties": {
     "gate_id": {

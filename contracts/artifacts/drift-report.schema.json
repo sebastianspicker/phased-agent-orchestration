@@ -56,8 +56,13 @@
         }
       }
     },
+    "analysis_complete": {
+      "type": "boolean",
+      "description": "True when drift analysis finished successfully. False or absent indicates incomplete analysis."
+    },
     "findings": {
       "type": "array",
+      "description": "Drift findings between source and target. Empty array indicates no drift detected.",
       "items": {
         "type": "object",
         "additionalProperties": false,

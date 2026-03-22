@@ -141,6 +141,26 @@ describe("spawnSkillTool", () => {
     expect(() => spawnSkillTool(toolOpts)).toThrow(/validation failed/);
   });
 
+  it("preserves both tool error code and outer toolError code when tool returns custom code", () => {
+    spawnSyncMock = () => ({
+      stdout: JSON.stringify({ success: false, error: { message: "schema invalid", code: "E_SCHEMA_INVALID" } }),
+      stderr: "",
+      status: 1,
+      signal: null,
+      error: null,
+    });
+
+    try {
+      spawnSkillTool(toolOpts);
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      // .code should be the tool-provided code (for ERROR_HINTS compatibility)
+      expect(err.code).toBe("E_SCHEMA_INVALID");
+      // .outerCode should preserve the original E_TOOL_FAILED code
+      expect(err.outerCode).toBe("E_QUALITY_GATE_FAILED");
+    }
+  });
+
   it("falls back to stderr when stdout is empty", () => {
     spawnSyncMock = () => ({
       stdout: "",

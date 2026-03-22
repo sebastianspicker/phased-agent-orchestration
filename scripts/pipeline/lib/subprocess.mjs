@@ -72,7 +72,11 @@ export function spawnSkillTool({
   if (proc.status !== 0 || !parsed.success) {
     const msg = parsed?.error?.message || rawOut;
     const failErr = toolError(toolName, "FAILED", `${toolName} failed: ${msg}`);
-    if (parsed?.error?.code) failErr.code = parsed.error.code;
+    const originalCode = failErr.code;
+    if (parsed?.error?.code) {
+      failErr.code = parsed.error.code;
+      failErr.outerCode = originalCode;
+    }
     throw failErr;
   }
 
