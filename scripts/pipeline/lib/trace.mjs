@@ -11,6 +11,17 @@ import { badInput, badTrace } from "./errors.mjs";
 import { SKILL_ENTRYPOINTS } from "../../lib/constants.mjs";
 import { spawnSkillTool } from "./subprocess.mjs";
 
+/** Maximum number of trace events allowed per run. */
+export const MAX_TRACE_EVENTS = 10000;
+
+/** Module-level trace event cache. */
+let _traceCache = { runId: null, events: null };
+
+/** Invalidate the trace event cache (exported for testing). */
+export function invalidateTraceCache() {
+  _traceCache = { runId: null, events: null };
+}
+
 export function nowIso() {
   return new Date().toISOString();
 }
@@ -47,6 +58,7 @@ export function appendTraceEvent(runId, payload, root = getRepoRoot()) {
 
   const tracePath = ensureTraceFile(runId, root);
   appendFileSync(tracePath, `${JSON.stringify(event)}\n`, "utf8");
+  invalidateTraceCache();
   return event;
 }
 
@@ -58,17 +70,46 @@ export function readTraceEvents(runId, root = getRepoRoot()) {
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
-  return lines.map((line, idx) => {
+  const events = [];
+  const warnings = [];
+
+  for (let idx = 0; idx < lines.length; idx++) {
     try {
-      return JSON.parse(line);
+      events.push(JSON.parse(lines[idx]));
     } catch (error) {
-      throw badTrace(`invalid trace JSONL at line ${idx + 1}: ${String(error)}`);
+      warnings.push(`skipped corrupt trace JSONL at line ${idx + 1}: ${String(error)}`);
     }
-  });
+  }
+
+  if (warnings.length > 0 && process.env.DEBUG_ERROR_DETAILS) {
+    for (const w of warnings) {
+      process.stderr.write(`[trace] ${w}\n`);
+    }
+  }
+
+  if (events.length > MAX_TRACE_EVENTS) {
+    throw badTrace(
+      `trace file exceeds MAX_TRACE_EVENTS (${MAX_TRACE_EVENTS}): found ${events.length} events`,
+    );
+  }
+
+  return events;
+}
+
+/**
+ * Return cached trace events for the given runId, reading from disk only on miss.
+ */
+export function getCachedTraceEvents(runId, root = getRepoRoot()) {
+  if (_traceCache.runId === runId && _traceCache.events !== null) {
+    return _traceCache.events;
+  }
+  const events = readTraceEvents(runId, root);
+  _traceCache = { runId, events };
+  return events;
 }
 
 export function hasEvent(runId, eventType, root = getRepoRoot()) {
-  const events = readTraceEvents(runId, root);
+  const events = getCachedTraceEvents(runId, root);
   return events.some((event) => event.event === eventType);
 }
 

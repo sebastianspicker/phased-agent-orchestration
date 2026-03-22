@@ -118,11 +118,15 @@ function loadOptionalJson(ref, root) {
   if (!existsSync(abs)) {
     return { exists: false, data: null, rel: toWorkspaceRelative(abs, root) };
   }
-  return {
-    exists: true,
-    data: JSON.parse(readFileSync(abs, "utf8")),
-    rel: toWorkspaceRelative(abs, root),
-  };
+  try {
+    return {
+      exists: true,
+      data: JSON.parse(readFileSync(abs, "utf8")),
+      rel: toWorkspaceRelative(abs, root),
+    };
+  } catch (err) {
+    throw badInput(`Failed to parse JSON from ${ref}: ${err.message}`);
+  }
 }
 
 function normalizeTraceabilityInput({

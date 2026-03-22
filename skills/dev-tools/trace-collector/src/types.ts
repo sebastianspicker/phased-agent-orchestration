@@ -38,11 +38,3 @@ export interface TraceResult {
   issues: string[];
   summary: TraceSummary;
 }
-
-export interface RunResult {
-  success: boolean;
-  data?: TraceResult;
-  error?: { code: string; message: string; details?: unknown };
-  metadata: { tool_version: string; execution_time_ms: number; [k: string]: unknown };
-  logs: string[];
-}

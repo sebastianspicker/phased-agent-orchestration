@@ -1,4 +1,3 @@
-import { performance } from "node:perf_hooks";
 import type { GateResult, Input } from "./types.js";
 import { evaluateGate } from "./lib/engine.js";
 import { runTool } from "@coding-agents-space/shared";

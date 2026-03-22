@@ -72,6 +72,7 @@ export function runRecordArtifact(options, { requireOption, assertKnownPhase }) 
   const phase = requireOption(options, "phase");
   assertKnownPhase(phase, "--phase");
   const artifactRef = requireOption(options, "artifact-ref");
+  resolveWithinRepo(artifactRef);
   const requestedAction = options.action || "write";
   if (!ARTIFACT_ACTION_SET.has(requestedAction)) {
     throw badInput("--action must be one of: read, write");

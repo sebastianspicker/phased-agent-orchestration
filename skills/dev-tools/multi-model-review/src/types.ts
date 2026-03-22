@@ -134,11 +134,3 @@ export interface DriftData {
   findings: DriftFinding[];
   adjudication: DriftAdjudication;
 }
-
-export interface RunResult {
-  success: boolean;
-  data?: ReviewData | DriftData;
-  error?: { code: string; message: string; details?: unknown };
-  metadata: { tool_version: string; execution_time_ms: number; [k: string]: unknown };
-  logs: string[];
-}

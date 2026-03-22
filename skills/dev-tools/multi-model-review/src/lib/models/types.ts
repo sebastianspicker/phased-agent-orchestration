@@ -12,8 +12,3 @@ export interface ReviewerFindings {
   role: string;
   findings: Finding[];
 }
-
-export interface ModelConfig {
-  id: string;
-  enabled: boolean;
-}

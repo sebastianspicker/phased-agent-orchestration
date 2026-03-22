@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -7,8 +7,10 @@ import {
   readTraceEvents,
   ensureTraceFile,
   summarizeEventsLocal,
+  MAX_TRACE_EVENTS,
+  getTracePath,
 } from "../lib/trace.mjs";
-import { getRunDir, getRepoRoot } from "../lib/state.mjs";
+import { getRunDir, getRepoRoot, ensureRunDirs } from "../lib/state.mjs";
 
 const root = getRepoRoot();
 const testRunId = "test-trace-unit";
@@ -120,5 +122,64 @@ describe("summarizeEventsLocal", () => {
     const summary = summarizeEventsLocal(events);
     expect(summary.total_tokens_in).toBe(0);
     expect(summary.total_cost_usd).toBe(0);
+  });
+});
+
+describe("readTraceEvents with corrupt JSONL", () => {
+  const corruptRunId = "test-trace-corrupt";
+
+  beforeEach(() => {
+    ensureRunDirs(corruptRunId, root);
+  });
+
+  afterEach(() => {
+    const runDir = getRunDir(corruptRunId, root);
+    if (existsSync(runDir)) {
+      rmSync(runDir, { recursive: true, force: true });
+    }
+  });
+
+  it("skips corrupt JSONL lines and returns only valid events", () => {
+    const tracePath = getTracePath(corruptRunId, root);
+    const content = [
+      JSON.stringify({ ts: "2026-01-01T00:00:00.000Z", run_id: corruptRunId, event: "phase_start", phase: "arm" }),
+      "NOT VALID JSON {{{",
+      "",
+      JSON.stringify({ ts: "2026-01-01T00:00:01.000Z", run_id: corruptRunId, event: "phase_end", phase: "arm", status: "ok" }),
+      "also broken",
+    ].join("\n");
+    writeFileSync(tracePath, content, "utf8");
+
+    const events = readTraceEvents(corruptRunId, root);
+    expect(events).toHaveLength(2);
+    expect(events[0].event).toBe("phase_start");
+    expect(events[1].event).toBe("phase_end");
+  });
+});
+
+describe("readTraceEvents MAX_TRACE_EVENTS limit", () => {
+  const overflowRunId = "test-trace-overflow";
+
+  beforeEach(() => {
+    ensureRunDirs(overflowRunId, root);
+  });
+
+  afterEach(() => {
+    const runDir = getRunDir(overflowRunId, root);
+    if (existsSync(runDir)) {
+      rmSync(runDir, { recursive: true, force: true });
+    }
+  });
+
+  it("throws when events exceed MAX_TRACE_EVENTS", () => {
+    expect(MAX_TRACE_EVENTS).toBe(10000);
+
+    const tracePath = getTracePath(overflowRunId, root);
+    const event = JSON.stringify({ ts: "2026-01-01T00:00:00.000Z", run_id: overflowRunId, event: "phase_start", phase: "arm" });
+    // Write MAX_TRACE_EVENTS + 1 lines
+    const lines = new Array(MAX_TRACE_EVENTS + 1).fill(event).join("\n") + "\n";
+    writeFileSync(tracePath, lines, "utf8");
+
+    expect(() => readTraceEvents(overflowRunId, root)).toThrow(/exceeds MAX_TRACE_EVENTS/);
   });
 });

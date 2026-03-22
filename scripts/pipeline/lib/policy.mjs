@@ -80,13 +80,7 @@ export function decideFanout({
     return a.fanout - b.fanout;
   });
 
-  const best = candidateScores[0] ?? {
-    fanout: 1,
-    quality_gain: 0,
-    cost_delta: 0,
-    coordination_cost: 0,
-    delta: 0,
-  };
+  const best = candidateScores[0];
 
   let chosenFanout = best.fanout;
   let reason = "best_delta";

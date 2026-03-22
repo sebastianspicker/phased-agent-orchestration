@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { existsSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import {
@@ -9,6 +9,8 @@ import {
   parseBooleanFlag,
   readJson,
   readJsonStrict,
+  resolveWithinRepo,
+  resolveWithinDirectory,
 } from "../lib/state.mjs";
 
 describe("phaseToArtifactKey", () => {
@@ -176,5 +178,53 @@ describe("readJsonStrict", () => {
     } finally {
       rmSync(path, { force: true });
     }
+  });
+});
+
+describe("resolveWithinRepo", () => {
+  const root = getRepoRoot();
+
+  it("rejects path traversal (../../../etc/passwd)", () => {
+    expect(() => resolveWithinRepo("../../../etc/passwd", root)).toThrow(/path escapes repository root/);
+  });
+
+  it("rejects absolute path outside the repo", () => {
+    expect(() => resolveWithinRepo("/tmp/evil", root)).toThrow(/path escapes repository root/);
+  });
+
+  it("accepts valid relative path within the repo", () => {
+    const result = resolveWithinRepo("scripts/verify.sh", root);
+    expect(result).toContain("scripts");
+    expect(result).toContain("verify.sh");
+  });
+});
+
+describe("resolveWithinDirectory", () => {
+  const tmpBase = resolve("/tmp", "test-resolve-within-dir");
+
+  beforeEach(() => {
+    mkdirSync(tmpBase, { recursive: true });
+    writeFileSync(resolve(tmpBase, "ok.txt"), "ok", "utf8");
+  });
+
+  afterEach(() => {
+    rmSync(tmpBase, { recursive: true, force: true });
+  });
+
+  it("rejects path traversal (../../../etc/passwd)", () => {
+    expect(() =>
+      resolveWithinDirectory(tmpBase, "../../../etc/passwd"),
+    ).toThrow(/path escapes base directory/);
+  });
+
+  it("rejects absolute path outside the directory by default", () => {
+    expect(() =>
+      resolveWithinDirectory(tmpBase, "/tmp/evil"),
+    ).toThrow(/must be relative/);
+  });
+
+  it("accepts valid relative path within the directory", () => {
+    const result = resolveWithinDirectory(tmpBase, "ok.txt");
+    expect(result).toContain("ok.txt");
   });
 });

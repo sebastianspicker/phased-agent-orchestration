@@ -25,8 +25,25 @@ describe("gateStatusRank", () => {
     expect(gateStatusRank("pass")).toBe(1);
   });
 
-  it("returns 1 for unknown status", () => {
-    expect(gateStatusRank("unknown")).toBe(1);
+  it("throws for unknown status", () => {
+    expect(() => gateStatusRank("unknown")).toThrow("unrecognized gate status");
+  });
+
+  it("throws E_BAD_INPUT for typo 'fial'", () => {
+    expect(() => gateStatusRank("fial")).toThrow("unrecognized gate status");
+    try {
+      gateStatusRank("fial");
+    } catch (err) {
+      expect(err.code).toBe("E_BAD_INPUT");
+    }
+  });
+
+  it("returns 1 for 'pass'", () => {
+    expect(gateStatusRank("pass")).toBe(1);
+  });
+
+  it("returns 3 for 'fail'", () => {
+    expect(gateStatusRank("fail")).toBe(3);
   });
 });
 
@@ -157,6 +174,30 @@ describe("emitGate", () => {
         status: "invalid",
       }),
     ).toThrow();
+  });
+
+  it("rejects pass status with blocking_failures", () => {
+    expect(() =>
+      emitGate({
+        runId: testRunId,
+        phase: "arm",
+        gateId: "arm-gate",
+        status: "pass",
+        blockingFailures: ["some-failure"],
+      }),
+    ).toThrow(/blockingFailures must be empty/);
+  });
+
+  it("rejects warn status with blocking_failures", () => {
+    expect(() =>
+      emitGate({
+        runId: testRunId,
+        phase: "arm",
+        gateId: "arm-gate",
+        status: "warn",
+        blockingFailures: ["some-failure"],
+      }),
+    ).toThrow(/blockingFailures must be empty/);
   });
 });
 

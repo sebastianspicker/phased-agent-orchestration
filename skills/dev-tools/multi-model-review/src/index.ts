@@ -1,5 +1,3 @@
-import { performance } from "node:perf_hooks";
-import { readFileSync } from "node:fs";
 import type { DriftData, Input, ReviewData } from "./types.js";
 import { runDriftDetect, runReview } from "./lib/engine.js";
 import { validateInput } from "./lib/input.js";

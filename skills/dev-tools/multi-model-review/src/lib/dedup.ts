@@ -13,10 +13,11 @@ function tokenize(text: string): Set<string> {
 
 /**
  * Token-overlap Jaccard similarity: |A ∩ B| / |A ∪ B|
+ * Accepts either raw strings or pre-tokenized Sets for performance.
  */
-export function tokenSimilarity(a: string, b: string): number {
-  const tokA = tokenize(a);
-  const tokB = tokenize(b);
+export function tokenSimilarity(a: string | Set<string>, b: string | Set<string>): number {
+  const tokA = typeof a === "string" ? tokenize(a) : a;
+  const tokB = typeof b === "string" ? tokenize(b) : b;
   if (tokA.size === 0 && tokB.size === 0) return 1;
   if (tokA.size === 0 || tokB.size === 0) return 0;
 
@@ -43,15 +44,28 @@ export function deduplicateFindings(taggedFindings: TaggedFinding[]): DedupFindi
     groups.set(cat, existing);
   }
 
+  // Pre-tokenize all finding descriptions to avoid redundant tokenization in O(n^2) comparisons
+  const tokenCache = new Map<string, Set<string>>();
+  function cachedTokenize(text: string): Set<string> {
+    let tokens = tokenCache.get(text);
+    if (!tokens) {
+      tokens = tokenize(text);
+      tokenCache.set(text, tokens);
+    }
+    return tokens;
+  }
+
   const results: DedupFinding[] = [];
 
   for (const [, categoryFindings] of groups) {
     const merged: DedupFinding[] = [];
 
     for (const f of categoryFindings) {
+      const fTokens = cachedTokenize(f.description);
       let wasMerged = false;
       for (const m of merged) {
-        if (tokenSimilarity(f.description, m.description) >= SIMILARITY_THRESHOLD) {
+        const mTokens = cachedTokenize(m.description);
+        if (tokenSimilarity(fTokens, mTokens) >= SIMILARITY_THRESHOLD) {
           if (!m.source_models.includes(f._source)) {
             m.source_models.push(f._source);
           }

@@ -44,7 +44,8 @@ const GATE_FILE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.json$/;
 export function gateStatusRank(status) {
   if (status === "fail") return 3;
   if (status === "warn") return 2;
-  return 1;
+  if (status === "pass") return 1;
+  throw badInput(`unrecognized gate status: ${status}`);
 }
 
 export function assertGateStatus(status, source = "status") {
@@ -84,6 +85,9 @@ export function emitGate({
   schemaValidation,
 }) {
   assertGateStatus(status, "gate status");
+  if (status !== "fail" && blockingFailures.length > 0) {
+    throw badInput("blockingFailures must be empty when status is not \"fail\"");
+  }
   const gate = {
     gate_id: gateId,
     phase,

@@ -1,5 +1,3 @@
-import { performance } from "node:perf_hooks";
-import { readFileSync } from "node:fs";
 import type { Input, TraceResult } from "./types.js";
 import { validateInput } from "./lib/input.js";
 import { collectTrace } from "./lib/trace.js";

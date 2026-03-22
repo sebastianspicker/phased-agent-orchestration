@@ -305,7 +305,7 @@ function buildBuildArtifact({ requirements }) {
     trace_id: "build-trace-1",
     summary: "Build phase executed by runner",
     outputs: ["scripts/pipeline/runner.mjs", "scripts/pipeline/lib/policy.mjs"],
-    covers_requirement_ids: [requirements[0]],
+    covers_requirement_ids: [...requirements],
   };
 }
 
@@ -365,6 +365,7 @@ export function buildArtifactForPhase({
   if (!builder) return null;
 
   const requirements = defaultRequirementIds(task);
+  if (!requirements.length) throw badInput("requirements array must not be empty for artifact generation");
   const contextManifest = buildContextManifest({ phase, stageProfile, budget });
   const reviewedBy = Math.max(1, policyDecision?.chosen_fanout ?? 1);
   const now = nowIso();
