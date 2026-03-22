@@ -29,6 +29,7 @@
         "build",
         "quality-static",
         "quality-tests",
+        "post-build",
         "denoise",
         "quality-frontend",
         "quality-backend",

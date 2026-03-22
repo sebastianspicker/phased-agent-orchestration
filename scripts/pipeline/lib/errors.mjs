@@ -13,3 +13,10 @@ export function badTrace(message) {
   err.code = "E_BAD_TRACE";
   return err;
 }
+
+export function toolError(toolName, suffix, message) {
+  const key = toolName.toUpperCase().replace(/-/g, "_");
+  const err = new Error(message);
+  err.code = `E_${key}_${suffix}`;
+  return err;
+}

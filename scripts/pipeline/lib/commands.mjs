@@ -64,6 +64,11 @@ export function runEndPhase(options, { requireOption, assertKnownPhase }) {
     status,
   });
 
+  // Note: endPhase intentionally does NOT save pipeline state.
+  // Unlike startPhase (which sets current_phase), endPhase has no state
+  // to update — the trace event is the authoritative record of phase
+  // completion. The next startPhase call will advance current_phase.
+
   process.stdout.write(`${JSON.stringify({ success: true, run_id: runId, phase, event: "phase_end", status }, null, 2)}\n`);
 }
 

@@ -5,12 +5,16 @@ import {
   phaseToArtifactKey,
   getRunDir,
   getRepoRoot,
+  getPipelineDir,
   gateFileNameForPhase,
+  loadPipelineState,
   parseBooleanFlag,
   readJson,
   readJsonStrict,
   resolveWithinRepo,
   resolveWithinDirectory,
+  savePipelineState,
+  withLockedState,
 } from "../lib/state.mjs";
 
 describe("phaseToArtifactKey", () => {
@@ -226,5 +230,78 @@ describe("resolveWithinDirectory", () => {
   it("accepts valid relative path within the directory", () => {
     const result = resolveWithinDirectory(tmpBase, "ok.txt");
     expect(result).toContain("ok.txt");
+  });
+});
+
+describe("withLockedState", () => {
+  let savedState;
+
+  beforeEach(() => {
+    // Snapshot current pipeline state
+    try {
+      savedState = loadPipelineState();
+    } catch {
+      savedState = null;
+    }
+    // Ensure a valid state exists
+    const state = savedState || {
+      run_id: "lock-test",
+      current_phase: "arm",
+      phase_order: ["arm"],
+      completed_gates: [],
+      artifacts: {},
+      config: {},
+    };
+    savePipelineState(state);
+  });
+
+  afterEach(() => {
+    // Clean up any stale lock file
+    const lockPath = resolve(getPipelineDir(), "pipeline-state.lock");
+    rmSync(lockPath, { force: true });
+    // Restore original state
+    if (savedState) {
+      savePipelineState(savedState);
+    }
+  });
+
+  it("provides state to callback and saves after", () => {
+    withLockedState(undefined, (state) => {
+      state._test_marker = true;
+    });
+
+    const updated = loadPipelineState();
+    expect(updated._test_marker).toBe(true);
+  });
+
+  it("returns the value from the callback", () => {
+    const result = withLockedState(undefined, () => 42);
+    expect(result).toBe(42);
+  });
+
+  it("removes the lock file after success", () => {
+    const lockPath = resolve(getPipelineDir(), "pipeline-state.lock");
+    withLockedState(undefined, () => {});
+    expect(existsSync(lockPath)).toBe(false);
+  });
+
+  it("removes the lock file after callback throws", () => {
+    const lockPath = resolve(getPipelineDir(), "pipeline-state.lock");
+    expect(() =>
+      withLockedState(undefined, () => {
+        throw new Error("boom");
+      }),
+    ).toThrow("boom");
+    expect(existsSync(lockPath)).toBe(false);
+  });
+
+  it("throws when lock is already held", () => {
+    const lockPath = resolve(getPipelineDir(), "pipeline-state.lock");
+    writeFileSync(lockPath, "", "utf8");
+    try {
+      expect(() => withLockedState(undefined, () => {})).toThrow(/locked by another process/);
+    } finally {
+      rmSync(lockPath, { force: true });
+    }
   });
 });

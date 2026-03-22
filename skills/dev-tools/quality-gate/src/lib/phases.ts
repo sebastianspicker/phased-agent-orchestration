@@ -7,6 +7,7 @@ export const VALID_GATE_PHASES = [
   "build",
   "quality-static",
   "quality-tests",
+  "post-build",
   "denoise",
   "quality-frontend",
   "quality-backend",

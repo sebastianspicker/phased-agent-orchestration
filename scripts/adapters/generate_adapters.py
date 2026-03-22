@@ -68,10 +68,9 @@ def compare_or_write(
 
 
 def resolve_runner_titles(manifest: dict) -> dict[str, str]:
-    generation = manifest.get("generation", {})
-    runner_defs = generation.get("runners", [])
+    runners = manifest.get("runners", [])
     titles: dict[str, str] = {}
-    for item in runner_defs:
+    for item in runners:
         name = item.get("name")
         if not name:
             continue
@@ -122,7 +121,6 @@ def main() -> int:
         return 2
 
     runner_titles = resolve_runner_titles(manifest)
-    core_playbook = manifest.get("core_playbook", ".codex/skills/orchestration/SKILL.md")
     legacy = generation.get("legacy_mirrors", {})
     cursor_mirror_root = legacy.get("cursor_skills_root")
     codex_playbook_target = legacy.get("codex_playbook")
@@ -146,10 +144,7 @@ def main() -> int:
         resolve_repo_path(root, adapter_root, f"runner '{runner_id}' skills_root")
 
         values = {
-            "RUNNER_ID": runner_id,
-            "RUNNER_NAME": runner_title,
             "RUNNER_TITLE": runner_title,
-            "CORE_PLAYBOOK_PATH": core_playbook,
             "ADAPTER_ROOT": adapter_root,
         }
 
@@ -178,6 +173,20 @@ def main() -> int:
                 compare_or_write(mirror, rendered, args.check, diffs, optional=True)
                 if not args.check and before != rendered:
                     writes += 1
+
+        pipeline_skill_rel = runner.get("pipeline_skill")
+        if pipeline_skill_rel:
+            if not isinstance(pipeline_skill_rel, str):
+                raise ValueError(f"Runner '{runner_id}' pipeline_skill must be a string.")
+            pipeline_tmpl = template_root / "skills" / "orchestration-pipeline" / "SKILL.md.tmpl"
+            if not pipeline_tmpl.exists():
+                raise FileNotFoundError(f"Missing pipeline skill template: {pipeline_tmpl}")
+            rendered_pipeline = render_template(pipeline_tmpl, values)
+            pipeline_path = resolve_repo_path(root, pipeline_skill_rel, f"runner '{runner_id}' pipeline_skill")
+            before = pipeline_path.read_text(encoding="utf-8") if pipeline_path.exists() else None
+            compare_or_write(pipeline_path, rendered_pipeline, args.check, diffs)
+            if not args.check and before != rendered_pipeline:
+                writes += 1
 
         if runner_id == "codex" and codex_playbook_target:
             legacy_tmpl = template_root / "skills" / "orchestration" / "SKILL.md.tmpl"

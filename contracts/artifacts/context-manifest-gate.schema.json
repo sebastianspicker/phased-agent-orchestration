@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Context manifest gate artifact",
   "type": "object",
-  "additionalProperties": true,
+  "additionalProperties": false,
   "required": ["context_manifest"],
   "properties": {
     "context_manifest": {
@@ -36,7 +36,7 @@
             }
           }
         },
-        "token_estimate": { "type": "integer", "minimum": 0 },
+        "token_estimate": { "type": "integer", "minimum": 0, "description": "Required for budget enforcement gates, even though optional in artifact schemas." },
         "char_count_estimate": { "type": "integer", "minimum": 0 }
       }
     }

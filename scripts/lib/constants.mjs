@@ -1,3 +1,10 @@
+/**
+ * Pipeline execution order — the 10 sequenced delivery phases.
+ * This is NOT all valid gate phases. Sub-phases (denoise, quality-frontend,
+ * quality-backend, quality-docs, security-review) are valid gate phases
+ * but not pipeline execution phases. See quality-gate VALID_GATE_PHASES
+ * for the complete gate phase set.
+ */
 export const PHASE_ORDER = [
   "arm",
   "design",
@@ -20,10 +27,6 @@ export const CONFIG_IDS = [
 ];
 
 export const DEFAULT_CONFIG_ID = "phased_default";
-
-export const PIPELINE_DIR = ".pipeline";
-
-export const COGNITIVE_TIERS = ["high_reasoning", "balanced", "fast"];
 
 export const SKILL_ENTRYPOINTS = {
   quality_gate: "skills/dev-tools/quality-gate/dist/index.js",

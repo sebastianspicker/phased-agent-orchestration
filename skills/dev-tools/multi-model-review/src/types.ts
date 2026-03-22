@@ -56,6 +56,8 @@ export interface CostBenefitEntry {
 
 export interface DedupFinding extends Finding {
   source_models: string[];
+  trace_id?: string;
+  covers_requirement_ids?: string[];
 }
 
 export interface FactCheckEntry {

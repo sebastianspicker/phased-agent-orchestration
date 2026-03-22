@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { badInput } from "./errors.mjs";
 
@@ -76,6 +76,42 @@ export function loadPipelineState(root = repoRoot) {
 
 export function savePipelineState(state, root = repoRoot) {
   writeJson(getPipelineStatePath(root), state);
+}
+
+/**
+ * Execute fn with exclusive access to pipeline-state.json.
+ * Uses a .lock sentinel file with O_EXCL to prevent concurrent access.
+ *
+ * @param {string} [root] Repository root (defaults to detected repo root)
+ * @param {(state: object) => *} fn Callback receiving the loaded state; may mutate it.
+ * @returns {*} The value returned by fn.
+ */
+export function withLockedState(root = repoRoot, fn) {
+  const lockPath = join(getPipelineDir(root), "pipeline-state.lock");
+  let fd;
+  try {
+    fd = openSync(lockPath, "wx"); // fails if lock exists
+  } catch (err) {
+    if (err.code === "EEXIST") {
+      throw badInput(
+        "Pipeline state is locked by another process. If this is stale, remove: " + lockPath,
+      );
+    }
+    throw err;
+  }
+  try {
+    closeSync(fd);
+    const state = loadPipelineState(root);
+    const result = fn(state);
+    savePipelineState(state, root);
+    return result;
+  } finally {
+    try {
+      unlinkSync(lockPath);
+    } catch {
+      /* ignore cleanup errors */
+    }
+  }
 }
 
 function assertPathWithinBase(resolvedPath, baseReal, pathRef, allowBase = false, baseLabel = "base directory") {

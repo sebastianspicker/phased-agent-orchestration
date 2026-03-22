@@ -18,6 +18,21 @@
       "type": "array",
       "items": { "type": "string", "minLength": 1 }
     },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["group_id", "status"],
+        "properties": {
+          "group_id": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "enum": ["pass", "fail", "skip"] },
+          "tasks_completed": { "type": "integer", "minimum": 0 },
+          "tasks_total": { "type": "integer", "minimum": 0 },
+          "errors": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
     "context_manifest": {
       "type": "object",
       "additionalProperties": false,

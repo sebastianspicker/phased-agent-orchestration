@@ -33,6 +33,8 @@ const SIMILARITY_THRESHOLD = 0.7;
 
 export interface TaggedFinding extends Finding {
   _source: string;
+  trace_id?: string;
+  covers_requirement_ids?: string[];
 }
 
 export function deduplicateFindings(taggedFindings: TaggedFinding[]): DedupFinding[] {
@@ -74,6 +76,15 @@ export function deduplicateFindings(taggedFindings: TaggedFinding[]): DedupFindi
           }
           if (f.evidence && !m.evidence) m.evidence = f.evidence;
           if (f.suggestion && !m.suggestion) m.suggestion = f.suggestion;
+          if (f.trace_id && !m.trace_id) {
+            m.trace_id = f.trace_id;
+          }
+          const incomingReqIds = f.covers_requirement_ids;
+          if (incomingReqIds?.length) {
+            const existing = m.covers_requirement_ids ?? [];
+            const merged = new Set([...existing, ...incomingReqIds]);
+            m.covers_requirement_ids = [...merged];
+          }
           wasMerged = true;
           break;
         }
@@ -88,6 +99,10 @@ export function deduplicateFindings(taggedFindings: TaggedFinding[]): DedupFindi
           evidence: f.evidence,
           suggestion: f.suggestion,
           source_models: [f._source],
+          ...(f.trace_id ? { trace_id: f.trace_id } : {}),
+          ...(f.covers_requirement_ids?.length
+            ? { covers_requirement_ids: [...f.covers_requirement_ids] }
+            : {}),
         });
       }
     }

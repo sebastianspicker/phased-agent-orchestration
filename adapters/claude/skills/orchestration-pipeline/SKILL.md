@@ -12,7 +12,7 @@ description: "Claude adapter orchestrator for the full phased workflow. Advances
 - `.pipeline/` run-state directory
 - `contracts/artifacts/*.schema.json`
 - `contracts/quality-gate.schema.json`
-- `.codex/skills/orchestration/SKILL.md`
+- `adapters/claude/skills/orchestration-pipeline/SKILL.md`
 
 ## Semantic intent
 - Human control points: critical transitions require explicit approvals.
@@ -95,5 +95,14 @@ Security risk acceptance is only allowed after:
 ## Context-transfer rule
 Each stage receives only the artifacts it needs. Do not transfer full conversational history across stages.
 
-## Canonical tiering note
-Prefer capability tiers (`high_reasoning`, `fast`) in pipeline config; keep model-specific names as adapter-level compatibility only.
+## Cognitive tier mapping
+The pipeline state `config.cognitive_tiers` assigns abstract tiers to stages. Adapters should map these to runner-specific models:
+
+| Tier | Stage roles | Characteristics |
+|------|------------|-----------------|
+| `high_reasoning` | arm, ar-lead, release-readiness | Ambiguous input, synthesis, risk decisions |
+| `balanced` | design, plan, build-lead, pmatch-adjudicator | Structured reasoning on well-defined inputs |
+| `fast` | ar-reviewers, pmatch-extractors, build-workers, quality-static, quality-tests, post-build | Narrow scope, deterministic, template-following |
+
+Runners should document their tier-to-model mapping (e.g., Claude: Opus for `high_reasoning`, Sonnet for `balanced`, Haiku for `fast`).
+Prefer capability tiers in pipeline config; keep model-specific names as adapter-level mapping only.

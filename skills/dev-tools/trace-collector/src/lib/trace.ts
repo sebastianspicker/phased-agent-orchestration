@@ -77,6 +77,14 @@ function buildSummary(events: TraceEvent[], issues: string[]): TraceSummary {
 
   const totalDurationMs = Object.values(phaseDurations).reduce((acc, value) => acc + value, 0);
 
+  // Compute wall-clock duration from run_start to run_end events
+  const runStart = events.find((e) => e.event === "run_start");
+  const runEnd = events.find((e) => e.event === "run_end");
+  const wallClockMs =
+    runStart && runEnd
+      ? new Date(runEnd.ts).getTime() - new Date(runStart.ts).getTime()
+      : undefined;
+
   return {
     total_events: events.length,
     events_by_type: eventsByType,
@@ -87,10 +95,16 @@ function buildSummary(events: TraceEvent[], issues: string[]): TraceSummary {
     total_cost_usd: Number(totalCostUsd.toFixed(6)),
     failure_count: failures,
     retry_count: retries,
-    total_duration_s: Number((totalDurationMs / 1000).toFixed(3)),
-    security_time_to_closure_s: Number(
-      ((phaseDurations["security-review"] ?? 0) / 1000).toFixed(3),
-    ),
+    /** @deprecated Use summed_phase_duration_s instead. This sums phase durations, not wall-clock time. */
+    total_duration_s: totalDurationMs > 0 ? Number((totalDurationMs / 1000).toFixed(3)) : undefined,
+    summed_phase_duration_s:
+      totalDurationMs > 0 ? Number((totalDurationMs / 1000).toFixed(3)) : undefined,
+    total_wall_clock_s:
+      wallClockMs !== undefined ? Number((wallClockMs / 1000).toFixed(3)) : undefined,
+    security_time_to_closure_s:
+      "security-review" in phaseDurations
+        ? Number((phaseDurations["security-review"] / 1000).toFixed(3))
+        : undefined,
   };
 }
 

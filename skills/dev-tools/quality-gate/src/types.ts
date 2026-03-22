@@ -1,3 +1,7 @@
+import type { GatePhase } from "./lib/phases.js";
+
+export type { GatePhase };
+
 export type CriterionType =
   | "field-exists"
   | "field-empty"
@@ -8,21 +12,6 @@ export type CriterionType =
   | "regex-match";
 
 export type GateStatus = "pass" | "fail" | "warn";
-export type GatePhase =
-  | "arm"
-  | "design"
-  | "adversarial-review"
-  | "plan"
-  | "pmatch"
-  | "build"
-  | "quality-static"
-  | "quality-tests"
-  | "denoise"
-  | "quality-frontend"
-  | "quality-backend"
-  | "quality-docs"
-  | "security-review"
-  | "release-readiness";
 
 export interface Criterion {
   name: string;

@@ -1,6 +1,5 @@
 {
   "version": 1,
-  "core_playbook": ".codex/skills/orchestration/SKILL.md",
   "stage_order": [
     "arm",
     "design",
@@ -33,28 +32,6 @@
   },
   "generation": {
     "template_root": "adapters/templates",
-    "runners": [
-      {
-        "name": "codex",
-        "title": "Codex"
-      },
-      {
-        "name": "cursor",
-        "title": "Cursor"
-      },
-      {
-        "name": "claude",
-        "title": "Claude"
-      },
-      {
-        "name": "gemini",
-        "title": "Gemini"
-      },
-      {
-        "name": "kilo",
-        "title": "Kilo"
-      }
-    ],
     "legacy_mirrors": {
       "cursor_skills_root": ".cursor/skills",
       "codex_playbook": ".codex/skills/orchestration/SKILL.md",
@@ -70,6 +47,7 @@
   "runners": [
     {
       "name": "codex",
+      "title": "Codex",
       "skills_root": "adapters/codex/skills",
       "pipeline_skill": "adapters/codex/skills/orchestration-pipeline/SKILL.md",
       "stage_adapters": {
@@ -87,6 +65,7 @@
     },
     {
       "name": "cursor",
+      "title": "Cursor",
       "skills_root": "adapters/cursor/skills",
       "pipeline_skill": "adapters/cursor/skills/orchestration-pipeline/SKILL.md",
       "stage_adapters": {
@@ -104,6 +83,7 @@
     },
     {
       "name": "claude",
+      "title": "Claude",
       "skills_root": "adapters/claude/skills",
       "pipeline_skill": "adapters/claude/skills/orchestration-pipeline/SKILL.md",
       "stage_adapters": {
@@ -121,6 +101,7 @@
     },
     {
       "name": "gemini",
+      "title": "Gemini",
       "skills_root": "adapters/gemini/skills",
       "pipeline_skill": "adapters/gemini/skills/orchestration-pipeline/SKILL.md",
       "stage_adapters": {
@@ -138,6 +119,7 @@
     },
     {
       "name": "kilo",
+      "title": "Kilo",
       "skills_root": "adapters/kilo/skills",
       "pipeline_skill": "adapters/kilo/skills/orchestration-pipeline/SKILL.md",
       "stage_adapters": {

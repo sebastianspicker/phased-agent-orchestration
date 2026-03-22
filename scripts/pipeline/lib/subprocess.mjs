@@ -5,6 +5,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { getRepoRoot } from "./state.mjs";
+import { toolError } from "./errors.mjs";
 
 /**
  * Spawn a skill tool as a subprocess and parse its JSON output.
@@ -26,11 +27,11 @@ export function spawnSkillTool({
 }) {
   const resolvedEntry = resolve(root, entrypoint);
   if (!existsSync(resolvedEntry)) {
-    const err = new Error(
+    throw toolError(
+      toolName,
+      "MISSING",
       `${toolName} dist entrypoint missing. Run npm run build in ${entrypoint.replace("/dist/index.js", "")}.`,
     );
-    err.code = `E_${toolName.toUpperCase().replace(/-/g, "_")}_MISSING`;
-    throw err;
   }
 
   const proc = spawnSync("node", [resolvedEntry], {
@@ -44,45 +45,35 @@ export function spawnSkillTool({
     },
   });
 
-  const toolKey = toolName.toUpperCase().replace(/-/g, "_");
-
   if (proc.error) {
     const isTimeout = proc.error.code === "ETIMEDOUT";
     const msg = isTimeout
       ? `${toolName} timed out after ${timeoutMs}ms`
       : `${toolName} failed to spawn: ${proc.error.message}`;
-    const err = new Error(msg);
-    err.code = `E_${toolKey}_${isTimeout ? "TIMEOUT" : "SPAWN"}`;
-    throw err;
+    throw toolError(toolName, isTimeout ? "TIMEOUT" : "SPAWN", msg);
   }
 
   if (proc.signal) {
-    const err = new Error(`${toolName} killed by signal ${proc.signal}`);
-    err.code = `E_${toolKey}_SIGNAL`;
-    throw err;
+    throw toolError(toolName, "SIGNAL", `${toolName} killed by signal ${proc.signal}`);
   }
 
-  const rawOut = proc.stdout || proc.stderr;
+  const rawOut = (proc.stdout && proc.stdout.trim()) ? proc.stdout : (proc.stderr && proc.stderr.trim()) ? proc.stderr : "";
   if (!rawOut) {
-    const err = new Error(`${toolName} returned empty output`);
-    err.code = `E_${toolKey}_EMPTY`;
-    throw err;
+    throw toolError(toolName, "EMPTY", `${toolName} returned empty output`);
   }
 
   let parsed;
   try {
     parsed = JSON.parse(rawOut);
   } catch (error) {
-    const err = new Error(`${toolName} returned invalid JSON: ${String(error)}`);
-    err.code = `E_${toolKey}_PARSE`;
-    throw err;
+    throw toolError(toolName, "PARSE", `${toolName} returned invalid JSON: ${String(error)}`);
   }
 
   if (proc.status !== 0 || !parsed.success) {
     const msg = parsed?.error?.message || rawOut;
-    const err = new Error(`${toolName} failed: ${msg}`);
-    err.code = parsed?.error?.code || `E_${toolKey}_FAILED`;
-    throw err;
+    const failErr = toolError(toolName, "FAILED", `${toolName} failed: ${msg}`);
+    if (parsed?.error?.code) failErr.code = parsed.error.code;
+    throw failErr;
   }
 
   return parsed.data;

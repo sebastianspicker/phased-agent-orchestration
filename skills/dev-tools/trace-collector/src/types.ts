@@ -28,7 +28,10 @@ export interface TraceSummary {
   total_cost_usd: number;
   failure_count: number;
   retry_count: number;
+  /** @deprecated Use summed_phase_duration_s instead. This sums phase durations, not wall-clock time. */
   total_duration_s?: number;
+  summed_phase_duration_s?: number;
+  total_wall_clock_s?: number;
   security_time_to_closure_s?: number;
 }
 
